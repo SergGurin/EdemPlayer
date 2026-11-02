@@ -835,13 +835,14 @@
       return items.filter(function (x) { return x && (x.imglr || x.img) && (!yy || String(x.year) === yy); }).slice(0, 40)
         .sort(function (a, b) { return (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0); }).slice(0, 3).map(function (x) { return x.imglr || x.img; });
     };
-    var mem = TV.Vod.cache[fid];
-    if (mem && mem.items.length && pick(mem.items).length) { posterFan(t, pick(mem.items)); return; }
-    TV.idb.get(TV.Vod._dbKey(fid)).then(function (sv) {
-      if (sv && sv.items && sv.items.length && pick(sv.items).length) { posterFan(t, pick(sv.items)); return; }
-      if (yr || !y) { if (yr) TV.Vod.sample().then(function (items) { posterFan(t, pick(items)); }); return; }
-      // жанр внутри года, списка жанра ещё нет — постеры этого года из сохранённых разделов
-      TV.Vod.sample().then(function (items) { var l = pick(items); if (l.length) posterFan(t, l); });
+    // постеры: сохранённый список фильтра, иначе — его первая страница с сервера (хранится сутки);
+    // внутри года — фильмы этого года, если их нет на первой странице — постеры этого года из разделов
+    TV.Vod.previewReq(fid, filterReq(it)).then(function (pv) {
+      var l = pv ? pick(pv.items) : [];
+      if (l.length) { posterFan(t, l); return; }
+      if (yy) TV.Vod.sampleAny().then(function (items) { var l2 = pick(items); if (l2.length) posterFan(t, l2); });
+    }).catch(function () {
+      if (yy) TV.Vod.sampleAny().then(function (items) { var l2 = pick(items); if (l2.length) posterFan(t, l2); });
     });
   }
 
@@ -1402,6 +1403,7 @@
         var all = navItem('div', 'tile cat all', 'vg:*');
         all.appendChild(el('div', 'name', TV.t('vod_all_genres')));
         catDecor(all, { hue: 300, ico: '🎬' });
+        TV.Vod.sampleAny().then(function (items) { posterFan(all, TV.Vod.posters(items, 3, true)); });
         all.tvOk = function () { self.push('vodlist', { id: '__all__', all: true, title: TV.t('vod_all_genres') }); };
         wrap.appendChild(all);
       }
@@ -1428,6 +1430,7 @@
       var all = navItem('div', 'tile cat all', 'vyg:*');
       all.appendChild(el('div', 'name', TV.t('vod_all_genres')));
       catDecor(all, { hue: (parseInt(y, 10) * 23) % 360, ico: y.slice(2), letter: true });
+      TV.Vod.previewReq(yid, yreq).then(function (pv) { posterFan(all, TV.Vod.posters(pv ? pv.items : [], 3, false)); }).catch(function () { /* */ });
       all.tvOk = function () { self.push('vodlist', { id: yid, req: yreq, title: TV.t('vod_all_genres'), parentTitle: y }); };
       wrap.appendChild(all);
       g.items.forEach(function (it, i) {

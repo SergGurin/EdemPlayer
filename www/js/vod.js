@@ -258,6 +258,15 @@
     },
 
     // Фильмы и сериалы из уже загруженных разделов (память или устройство) — для картинок на плитках
+    // фильмы для постеров: сохранённые списки разделов, иначе — превью разделов
+    sampleAny: function () {
+      return V.sample().then(function (items) {
+        if (items.length) return items;
+        var secs = (V.root && V.root.sections) || [];
+        return Promise.all(secs.map(function (sc) { return V.preview(sc).catch(function () { return null; }); }))
+          .then(function (l) { return [].concat.apply([], l.map(function (pv) { return pv ? pv.items : []; })); });
+      });
+    },
     sample: function () {
       if (V._sample && Date.now() - V._sampleT < 60000) return V._sample;
       var secs = (V.root && V.root.sections) || [];
@@ -594,7 +603,11 @@
     // Полный список (из памяти или с устройства), иначе — одна короткая страница с сервера (хранится сутки)
     _prev: {},
     preview: function (sec) {
-      var sid = 'sec:' + JSON.stringify(sec.request);
+      var req = V.reqFor(sec, 'list');
+      return V.previewReq('sec:' + JSON.stringify(sec.request), req);
+    },
+    // превью любого списка (раздел, жанр, год): id — ключ списка, req — запрос его первой страницы
+    previewReq: function (sid, baseReq) {
       if (V._prev[sid]) return V._prev[sid];
       var mem = V.cache[sid];
       var fromItems = function (items, count) { return { items: items.filter(function (x) { return x && (x.imglr || x.img); }).slice(0, 40), count: count }; };
@@ -604,9 +617,9 @@
         if (full && full.items && full.items.length) return fromItems(full.items, full.items.length);
         return TV.idb.get(key).then(function (pv) {
           if (pv && Date.now() - pv.t < 24 * 3600 * 1000) return pv;
-          // запросы превью — по очереди, чтобы не нагружать сервер
-          V._prevQ = (V._prevQ || Promise.resolve()).then(function () {
-            var req = V.reqFor(sec, 'list'); req.limit = 24;
+          // запросы превью — по очереди (не нагружать сервер); сбой одного не останавливает остальные
+          var job = (V._prevQ || Promise.resolve()).then(function () {
+            var req = {}; Object.keys(baseReq).forEach(function (k) { req[k] = baseReq[k]; }); req.limit = 24;
             return V.request(req).then(function (j) {
               var items = (j.items || []).filter(function (x) { return x && x.type && x.type !== 'next' && x.type !== 'category'; });
               var r = fromItems(items, j.count || 0); r.t = Date.now();
@@ -614,7 +627,8 @@
               return r;
             });
           });
-          return V._prevQ;
+          V._prevQ = job.catch(function () { /* следующий в очереди всё равно пойдёт */ });
+          return job;
         });
       });
       pr.catch(function () { delete V._prev[sid]; });
