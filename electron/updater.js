@@ -35,16 +35,17 @@ function sha256(buf) { return crypto.createHash('sha256').update(buf).digest('he
 function fileHash(f) { try { return sha256(fs.readFileSync(f)); } catch (e) { return null; } }
 function rmrf(d) { try { fs.rmSync(d, { recursive: true, force: true }); } catch (e) { /* */ } }
 
-// Адреса источников обновления (можно переопределить переменной EDP_UPDATE_BASE — для проверки)
-function bases() {
+// Адреса источников обновления (можно переопределить переменной EDP_UPDATE_BASE — для проверки).
+// sha — номер последнего коммита: по нему и raw, и зеркало jsDelivr отдают точно свежие файлы (без кэша ветки)
+function bases(sha) {
   if (process.env.EDP_UPDATE_BASE) return [process.env.EDP_UPDATE_BASE.replace(/\/+$/, '')];
   if (!CFG.repo) return [];
+  const ref = sha || CFG.branch;
   return [
-    'https://raw.githubusercontent.com/' + CFG.repo + '/' + CFG.branch,
-    'https://cdn.jsdelivr.net/gh/' + CFG.repo + '@' + CFG.branch
+    'https://raw.githubusercontent.com/' + CFG.repo + '/' + ref,
+    'https://cdn.jsdelivr.net/gh/' + CFG.repo + '@' + ref
   ];
 }
-
 const U = {
   SHELL,
   repo: () => CFG.repo,
@@ -90,15 +91,25 @@ const U = {
     if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + url.replace(/^https?:\/\/([^/]+).*$/, '$1'));
     return binary ? Buffer.from(await r.arrayBuffer()) : r.text();
   },
+  // номер последнего коммита ветки (API GitHub; если недоступен — работаем по имени ветки)
+  async _sha() {
+    if (process.env.EDP_UPDATE_BASE || !CFG.repo) return null;
+    try {
+      const r = await net.fetch('https://api.github.com/repos/' + CFG.repo + '/commits/' + CFG.branch,
+        { cache: 'no-store', headers: { Accept: 'application/vnd.github.sha', 'User-Agent': 'EdemPlayer-updater' } });
+      const t = (await r.text()).trim();
+      return r.ok && /^[0-9a-f]{40}$/.test(t) ? t : null;
+    } catch (e) { return null; }
+  },
   async _manifest() {
-    let lastErr = null;
-    for (const b of bases()) {
+    const sha = await U._sha(), errs = [];
+    for (const b of bases(sha)) {
       try {
-        const m = JSON.parse(await U._get(b + '/update/manifest.json?t=' + Date.now()));
-        if (m && m.version && m.files) return { m, base: b };
-      } catch (e) { lastErr = e; }
+        const m = JSON.parse(await U._get(b + '/update/manifest.json' + (sha ? '' : '?t=' + Date.now())));
+        if (m && m.version && m.files) return { m, base: b, src: b.replace(/^https?:\/\/([^/]+).*$/, '$1') + (sha ? ' @' + sha.slice(0, 7) : ''), errs };
+      } catch (e) { errs.push(b.replace(/^https?:\/\/([^/]+).*$/, '$1') + ': ' + String(e && e.message || e)); }
     }
-    throw lastErr || new Error('no update source');
+    const err = new Error(errs.join('; ') || 'no update source'); throw err;
   },
 
   // Проверить и скачать. manual — пользователь нажал «Проверить»: сообщаем и об отсутствии обновлений
@@ -108,7 +119,8 @@ const U = {
     U.busy = true;
     try {
       U.emit({ state: 'checking', error: null });
-      const { m, base } = await U._manifest();
+      const { m, base, src, errs } = await U._manifest();
+      U.emit({ src: src, srcErr: errs.length ? errs.join('; ') : null });
       const cur = U.active();
       const pending = readJson(path.join(NDIR(), 'version.json'));
       if (pending && pending.ready && pending.version === m.version) { U.emit({ state: 'ready', version: m.version }); return U.status; }

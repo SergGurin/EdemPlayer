@@ -256,6 +256,9 @@
         var s2 = self._upd || i.status || {};
         st.classList.toggle('warnt', s2.state === 'error' || s2.state === 'shell');
         st.textContent = !i.repo ? TV.t('upd_norepo') : s2.state ? TV.t('upd_st_' + s2.state, { v: s2.version || '', e: s2.error || '', p: s2.progress || 0 }) : '';
+        // откуда пришёл ответ и какой адрес не сработал (новые оболочки сообщают это)
+        if (s2.src) st.textContent += ' · ' + TV.t('upd_src', { s: s2.src });
+        if (s2.srcErr && s2.state !== 'error') st.textContent += ' · ' + TV.t('upd_src_err', { e: s2.srcErr });
       }
       U.info().then(show);
       var row = btnRow('updbtns');
