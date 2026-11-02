@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' app: blob: data: http: https:; script-src 'self' app: blob: 'wasm-unsafe-eval' 'unsafe-eval'; worker-src 'self' app: blob:; style-src 'self' app: 'unsafe-inline'; img-src * data: blob:; media-src * blob: data:; connect-src *">
+  <title>EdemPlayer</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="app">
+    <header id="top">
+      <div id="crumbs"></div>
+      <div class="hint" data-i18n="hint_top"></div>
+      <div id="bgind" class="bgind hidden"></div>
+      <div id="clock"></div>
+    </header>
+    <main id="screen"></main>
+  </div>
+
+  <div id="player" class="hidden">
+    <video id="video" playsinline></video>
+    <div id="pspin" class="spin hidden"></div>
+    <div id="pausemark" class="hidden">❚❚</div>
+    <div id="osd">
+      <div class="osd-top">
+        <div id="osd-logo"></div>
+        <div class="osd-ch">
+          <div id="osd-name"></div>
+          <div id="osd-title"></div>
+          <div id="osd-desc"></div>
+        </div>
+        <div id="osd-badge" class="badge"></div>
+      </div>
+      <div class="osd-bottom">
+        <div class="times"><span id="t-start"></span><span id="t-pos"></span><span id="t-stop"></span></div>
+        <div id="bar"><div id="bar-avail"></div><div id="bar-fill"></div><div id="bar-head"></div></div>
+        <div id="ctrls">
+          <div class="cbtn seekbtn" data-act="prevp" data-i18n-title="c_prev">⏮</div>
+          <div class="cbtn seekbtn" data-act="rwbig" data-i18n-title="c_rwbig" data-i18n="rwbig"></div>
+          <div class="cbtn seekbtn" data-act="rw" data-i18n-title="c_rw" data-i18n="rw"></div>
+          <div class="cbtn main" data-act="play" data-i18n-title="c_play">❚❚</div>
+          <div class="cbtn seekbtn" data-act="ff" data-i18n-title="c_ff" data-i18n="ff"></div>
+          <div class="cbtn seekbtn" data-act="ffbig" data-i18n-title="c_ffbig" data-i18n="ffbig"></div>
+          <div class="cbtn seekbtn" data-act="nextp" data-i18n-title="c_next">⏭</div>
+          <div class="cbtn live seekbtn" data-act="live" data-i18n-title="c_live" data-i18n="c_live_txt"></div>
+          <div class="csep seekbtn"></div>
+          <div class="cbtn" data-act="voldown" data-i18n-title="c_voldown">🔉−</div>
+          <div class="cbtn vol" data-act="mute" data-i18n-title="c_mute"><span id="vol-ico">🔊</span> <span id="vol-val">100%</span></div>
+          <div class="cbtn" data-act="volup" data-i18n-title="c_volup">🔊+</div>
+          <div class="cbtn" data-act="info" data-i18n-title="c_info">ℹ</div>
+        </div>
+        <div class="phint" data-i18n="hint_player"></div>
+      </div>
+    </div>
+    <div id="perr" class="hidden"></div>
+    <div id="pinfo" class="hidden"></div>
+    <div id="pnote" class="hidden"></div>
+    <div id="volhud" class="hidden"><span id="volhud-ico">🔊</span><div class="vbar"><i id="volhud-fill"></i></div><span id="volhud-val">100%</span></div>
+  </div>
+
+  <div id="loading" class="hidden"></div>
+  <div id="dialog" class="hidden"></div>
+  <div id="toast"></div>
+
+  <script src="vendor/hls.min.js"></script>
+  <script src="vendor/vosk.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/m3u.js"></script>
+  <script src="js/catchup.js"></script>
+  <script src="js/source.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/vod.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/voice.js"></script>
+  <script src="js/epg.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

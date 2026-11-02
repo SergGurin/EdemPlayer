@@ -1,0 +1,56 @@
+{
+  "name": "edemplayer",
+  "productName": "EdemPlayer",
+  "version": "2.1.0",
+  "description": "EdemPlayer — IPTV-плеер с архивом и программой передач",
+  "main": "electron/main.js",
+  "author": "EdemPlayer",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "start:fs": "electron . --fullscreen",
+    "dist": "electron-builder --win dir && node tools/pack-zip.js",
+    "dist:dir": "electron-builder --win dir",
+    "prestart": "node tools/join-model.js",
+    "predist": "node tools/join-model.js",
+    "predist:dir": "node tools/join-model.js",
+    "manifest": "node tools/make-manifest.js"
+  },
+  "build": {
+    "appId": "ru.edemplayer.app",
+    "productName": "EdemPlayer",
+    "files": [
+      "electron/**",
+      "www/**",
+      "!www/models/*.part*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "signAndEditExecutable": false
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "asar": false,
+    "electronLanguages": [
+      "ru",
+      "en-US",
+      "uk",
+      "de",
+      "fr",
+      "es"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^38.8.6",
+    "electron-builder": "^26.18.0"
+  },
+  "edemShell": 1,
+  "edemUpdate": {
+    "repo": "SergGurin/EdemPlayer",
+    "branch": "main"
+  }
+}
