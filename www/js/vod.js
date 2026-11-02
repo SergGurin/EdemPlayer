@@ -66,6 +66,9 @@
       // невидимые «пробелы», недопустимые в JSON (неразрывный, нулевой ширины и т. п.), и табуляции/переводы строк внутри строк
       c = c.replace(/[\t\r\n\u00A0\u1680\u2000-\u200F\u2028\u2029\u202F\u205F\u2060\u3000\uFEFF]/g, ' ');
       try { return JSON.parse(c); } catch (e) { /* */ }
+      // лишние запятые сервера: «[,{…}]», «{…},,{…}», «…,]» — убираем (внутри строк не трогаем)
+      c = V._fixCommas(c);
+      try { return JSON.parse(c); } catch (e) { /* */ }
       var a = c.indexOf('{'), b = c.lastIndexOf('}');
       if (a >= 0 && b > a) { try { return JSON.parse(c.slice(a, b + 1)); } catch (e) { /* */ } }
       // несколько объектов подряд — берём первый целый
@@ -78,6 +81,19 @@
         }
       }
       return null;
+    },
+    _fixCommas: function (c) {
+      var out = '', inStr = false, esc = false, last = '';
+      for (var i = 0; i < c.length; i++) {
+        var ch = c[i];
+        if (inStr) { out += ch; if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') { inStr = false; last = '"'; } continue; }
+        if (ch === '"') { inStr = true; out += ch; continue; }
+        if (/\s/.test(ch)) { out += ch; continue; }
+        if (ch === ',' && (last === '[' || last === ',' || last === '{')) continue;     // пустой элемент
+        if ((ch === ']' || ch === '}') && last === ',') out = out.replace(/,(\s*)$/, '$1'); // запятая перед закрытием
+        out += ch; last = ch;
+      }
+      return out;
     },
     // какие необычные символы в ответе (для сообщения об ошибке): «U+00A0×3, U+0009×1»
     _oddChars: function (t) {
@@ -199,8 +215,8 @@
           });
           // страница без фильмов (только «дальше») — считаем подряд идущие
           empty = (j.items || []).some(function (it) { return it && it.type && it.type !== 'next'; }) ? 0 : empty + 1;
-          // конец: нет следующей страницы, указатель не продвинулся, 3 пустые страницы подряд или предел
-          var more = next != null && next > (offset || 0) && items.length < 20000 && empty < 3 && pages < 400;
+          // конец: нет следующей страницы, указатель не продвинулся, 8 пустых страниц подряд или предел
+          var more = next != null && next > (offset || 0) && items.length < 20000 && empty < 8 && pages < 400;
           if (onPage) onPage(items, !more, meta, total);
           if (!more) return { items: items, meta: meta, total: total };
           return new Promise(function (r) { setTimeout(r, gap || 0); }).then(function () { return page(next); });
