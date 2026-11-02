@@ -3,3 +3,4 @@ dist/
 www/models/*.part*
 .DS_Store
 Thumbs.db
+*.log

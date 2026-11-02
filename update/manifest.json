@@ -2,7 +2,7 @@
  "app": "EdemPlayer",
  "version": "2.2.0",
  "shell": 1,
- "date": "2026-11-02T18:01:55.034Z",
+ "date": "2026-11-02T18:02:07.634Z",
  "files": {
   "www/css/app.css": "91109aac5d60812bb699e8e4b0072e8cc3ed256b9dfa7d5e3dafb792cead1c7a",
   "www/index.html": "e6b2000edf62735f08799940439d45dca3126fbbd42f2ccffc602a4eb307d70f",
@@ -24,7 +24,6 @@
   "www/js/voice.js": "b6f54eab1986efafb19dffbdc38716e6a92153687e1ba9daf03a693174411fdf",
   "www/vendor/hls.min.js": "cfc70cc9e9fc63d071919e087670abc760c8fd1bc889b88588026e4d22193bbe",
   "www/vendor/pako_inflate.min.js": "efb8976b994144ffe643122f0b021e7999bb80736e17160f8b4417bf04b9b7fc",
-  "www/vendor/vosk.js": "29504515526e974f4cb053cf08811c4de5fb2a74007c0a5a957db50eaa8d5d0c",
-  "www/www.log": "b539713c1eb465515e5baa194116ad7543cd730ef25681c192fe285369646dfd"
+  "www/vendor/vosk.js": "29504515526e974f4cb053cf08811c4de5fb2a74007c0a5a957db50eaa8d5d0c"
  }
 }
