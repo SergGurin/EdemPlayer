@@ -575,4 +575,7 @@ body.listmode .tile.letter.allg .ico { display: none; }
 .btn.chip.clr::before { content: none; }
 .shero.small { padding: 1em 1em .4em; }
 .shero.small .sheroico { font-size: 2.6em; }
-.settings .sbtns.tabs { flex-wrap: nowrap; width: max-content; max-width: calc(100vw - 4em); }
+/* вкладки настроек: компактно, при нехватке места — перенос, без горизонтальной прокрутки */
+.settings { max-width: 76em; overflow-x: hidden; }
+.settings .sbtns.tabs { flex-wrap: wrap; gap: .55em; }
+.settings .btn.tab { font-size: .95em; padding: .5em 1.05em; }
