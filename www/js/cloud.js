@@ -23,7 +23,7 @@
   function b64url(buf) { return b64(buf).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
 
   // Ключи, которые попадают в облако
-  var KEYS = ['syncCode', 'srcMode', 'playlistUrl', 'accessKey', 'channelDomain', 'epgUrls', 'hiddenLangs', 'langOverrides', 'uiLang', 'favs', 'volume', 'muted', 'fileName', 'recent', 'cloudUrl', 'vportal', 'vodSort', 'vodProto', 'vodHistory', 'vodPos', 'chanView'];
+  var KEYS = ['syncCode', 'srcMode', 'playlistUrl', 'accessKey', 'channelDomain', 'epgUrls', 'hiddenLangs', 'langOverrides', 'uiLang', 'favs', 'volume', 'muted', 'fileName', 'recent', 'cloudUrl', 'vportal', 'vodSort', 'vodProto', 'vodHistory', 'vodPos', 'searchHist', 'chanView'];
   // параметры доступа к самому облаку — только в файл (в облаке они не нужны)
   var FILE_KEYS = ['cloudProvider', 'yaToken', 'yaFolder'];
   var YA = 'https://cloud-api.yandex.net/v1/disk';

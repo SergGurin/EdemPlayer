@@ -566,3 +566,12 @@ body.listmode .tile.letter.allg .ico { display: none; }
 .prog .logo.sm .ini { font-size: .7em; }
 .plist { margin-top: .3em; }
 .plist .prog { background: var(--glass), rgba(20,26,41,.6); border: .07em solid var(--edge); margin-bottom: .4em; }
+
+/* история поиска */
+.sbtns.chips { gap: .6em; margin: .3em 0 .4em; }
+.btn.chip { padding: .45em 1.1em; font-weight: 600; background: rgba(147,182,255,.1); border-color: rgba(147,182,255,.22); }
+.btn.chip::before { content: '🕘 '; opacity: .65; font-size: .85em; }
+.btn.chip.clr { background: transparent; color: var(--dim); }
+.btn.chip.clr::before { content: none; }
+.shero.small { padding: 1em 1em .4em; }
+.shero.small .sheroico { font-size: 2.6em; }

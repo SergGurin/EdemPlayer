@@ -70,6 +70,14 @@
     var t = function (ms) { return new Date(ms).toLocaleString(TV.locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
     return [e.l ? TV.t('err_live_at', { t: t(e.l) }) : '', e.a ? TV.t('err_play_at', { t: t(e.a) }) : ''].filter(Boolean).join('\n');
   };
+  // История поиска: последние запросы первыми, без повторов (регистр не важен)
+  TV.searchHist = function () { return TV.store.get('searchHist', []) || []; };
+  TV.rememberSearch = function (q) {
+    q = String(q || '').trim(); if (q.length < 2) return;
+    var l = TV.searchHist().filter(function (x) { return x.toLowerCase() !== q.toLowerCase(); });
+    l.unshift(q); TV.store.set('searchHist', l.slice(0, 30));
+  };
+  TV.forgetSearch = function (q) { TV.store.set('searchHist', TV.searchHist().filter(function (x) { return x !== q; })); };
   TV.playlistUrl = function () { return TV.store.get('playlistUrl', ''); };
   // Адреса программы передач, добавленные пользователем (в порядке приоритета)
   TV.epgUserUrls = function () {
@@ -1575,7 +1583,15 @@
       wrap.appendChild(bar);
       var status = el('div', 'sstatus'); wrap.appendChild(status);
       var res = el('div', 'sres'); wrap.appendChild(res);
-      var timer = null;
+      var timer = null, histTimer = null;
+      // Enter в поле — тоже запомнить
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') TV.rememberSearch(inp.value); }, true);
+      // ушли из поля к результатам (стрелкой, Enter, мышью) — запрос нужный, запоминаем
+      inp.addEventListener('blur', function () {
+        var q = inp.value.trim(); if (q.length < 2) return;
+        var r = TV.Search.run(q, self.uniqueChannels());
+        if (r.channels.length || r.progs.length || (TV.Vod.enabled() && q.length >= 3)) TV.rememberSearch(q);
+      });
       // заголовок раздела результатов: значок, название, количество
       function head(ico, title, n) {
         var h = el('div', 'shead rhead');
@@ -1585,7 +1601,22 @@
       }
       // пустой запрос: заставка и подборки — недавние каналы и «продолжить просмотр»
       function suggest() {
-        var hero = el('div', 'shero');
+        var hist = TV.searchHist();
+        if (hist.length) {
+          var hh = head('🕘', TV.t('s_history'), hist.length); res.appendChild(hh);
+          var chips = el('div', 'sbtns chips'); chips.setAttribute('data-zone', 'shist');
+          hist.forEach(function (q) {
+            var c = navItem('div', 'btn chip', 'sh:' + q); c.textContent = q; c.title = TV.t('s_hist_tip');
+            c.tvOk = function () { inp.value = q; TV.rememberSearch(q); show(); searchVod(); };
+            c.tvLong = function () { TV.forgetSearch(q); show(); Nav.focus(res.querySelector('.chip') || inp, { noScroll: true }); };
+            chips.appendChild(c);
+          });
+          var clr = navItem('div', 'btn chip clr', 'shclr'); clr.textContent = TV.t('s_hist_clear');
+          clr.tvOk = function () { TV.store.set('searchHist', []); show(); Nav.focus(inp, { noScroll: true }); };
+          chips.appendChild(clr);
+          res.appendChild(chips);
+        }
+        var hero = el('div', 'shero' + (hist.length ? ' small' : ''));
         hero.appendChild(el('div', 'sheroico', '🔍'));
         hero.appendChild(el('div', 'sherot', TV.t('search_hint')));
         res.appendChild(hero);
@@ -1628,6 +1659,9 @@
         var q = inp.value.trim();
         if (!q) { status.textContent = TV.Voice.listening() ? status.textContent : ''; suggest(); return; }
         var r = TV.Search.run(q, self.uniqueChannels());
+        // запрос, на котором остановились (2,5 с без изменений) и что-то нашлось, — в историю
+        clearTimeout(histTimer);
+        if (r.channels.length || r.progs.length || (TV.Vod.enabled() && q.length >= 3)) histTimer = setTimeout(function () { if (inp.value.trim() === q) TV.rememberSearch(q); }, 2500);
         // «ничего не найдено» — только если и медиатека искать не будет
         var vodWill = TV.Vod.enabled() && q.length >= 3;
         if (!TV.Voice.listening()) status.textContent = r.channels.length || r.progs.length
@@ -1715,7 +1749,7 @@
         TV.Voice.listen({
           onState: function (t) { status.textContent = '🎤 ' + t; },
           onPartial: function (t) { heard = true; inp.value = t; status.textContent = '🎤 ' + t + '…'; },
-          onResult: function (t) { if (t) { inp.value = t; status.textContent = ''; show(); searchVod(); } },
+          onResult: function (t) { if (t) { inp.value = t; TV.rememberSearch(t); status.textContent = ''; show(); searchVod(); } },
           onEnd: function () {
             mic.classList.remove('rec'); mic.textContent = TV.t('voice');
             if (!inp.value.trim() && !heard && status.textContent.indexOf(TV.t('speak')) >= 0) status.textContent = TV.t('not_heard');
