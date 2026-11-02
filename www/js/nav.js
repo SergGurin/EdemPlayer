@@ -133,6 +133,8 @@
     });
     root.addEventListener('contextmenu', function (e) {
       var el = e.target.closest && e.target.closest('[data-nav]');
+      // в полях ввода — обычное меню правки (Вырезать / Копировать / Вставить)
+      if (/INPUT|TEXTAREA/.test(e.target.tagName)) return;
       e.preventDefault();
       if (el && el.tvLong) { Nav.focus(el, { noScroll: true }); el.tvLong(el); }
     });

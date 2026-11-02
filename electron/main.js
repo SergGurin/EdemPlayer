@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, protocol, net, ipcMain, Menu, globalShortcut, shell } = require('electron');
+const { app, BrowserWindow, protocol, net, ipcMain, Menu, globalShortcut, shell, clipboard, dialog } = require('electron');
 const http = require('http');
 const https = require('https');
 const dns = require('dns');
@@ -144,7 +144,23 @@ function createWindow() {
   // Боковая кнопка мыши «назад» и клавиша «Назад» на мультимедийных клавиатурах
   win.on('app-command', (e, cmd) => { if (cmd === 'browser-backward') win.webContents.send('back'); });
   win.webContents.on('before-input-event', (e, input) => {
-    if (input.type === 'keyDown' && input.key === 'F12' && input.control && input.shift) win.webContents.toggleDevTools();
+    if (input.type !== 'keyDown') return;
+    if (input.key === 'F12' && input.control && input.shift) { win.webContents.toggleDevTools(); return; }
+    // меню окна отключено — правку текста (Ctrl+C/V/X/A/Z/Y) выполняем сами
+    if ((input.control || input.meta) && !input.alt) {
+      const k = String(input.key).toLowerCase(), wc = win.webContents;
+      const act = { c: 'copy', 'с': 'copy', v: 'paste', 'м': 'paste', x: 'cut', 'ч': 'cut', a: 'selectAll', 'ф': 'selectAll', z: input.shift ? 'redo' : 'undo', 'я': input.shift ? 'redo' : 'undo', y: 'redo', 'н': 'redo' }[k];
+      if (act) { e.preventDefault(); wc[act](); }
+      else if (input.key === 'Insert') { e.preventDefault(); wc.copy(); }
+    } else if (input.shift && input.key === 'Insert') { e.preventDefault(); win.webContents.paste(); }
+  });
+  // правый щелчок по полю ввода или выделенному тексту — меню правки
+  win.webContents.on('context-menu', (e, p) => {
+    const items = [];
+    if (p.isEditable) items.push({ role: 'cut', label: 'Вырезать', enabled: p.editFlags.canCut }, { role: 'copy', label: 'Копировать', enabled: p.editFlags.canCopy },
+      { role: 'paste', label: 'Вставить', enabled: p.editFlags.canPaste }, { type: 'separator' }, { role: 'selectAll', label: 'Выделить всё' });
+    else if (p.selectionText) items.push({ role: 'copy', label: 'Копировать' });
+    if (items.length) Menu.buildFromTemplate(items).popup({ window: win });
   });
   // закрытие окна — сначала спрашиваем пользователя (ответ придёт через ipc 'quit')
   win.on('close', (e) => {
@@ -196,6 +212,15 @@ app.whenReady().then(() => {
   ipcMain.handle('http', (e, o) => {
     if (!o || !/^https?:\/\//i.test(String(o.url))) return { error: 'BAD_URL', message: 'bad url' };
     return o.engine === 'node' ? nodeRequest(o, 0) : chromiumRequest(o);
+  });
+  // буфер обмена и сохранение файла (окно «Сохранить как»)
+  ipcMain.handle('clip-read', () => clipboard.readText());
+  ipcMain.handle('clip-write', (e, t) => { clipboard.writeText(String(t == null ? '' : t)); return true; });
+  ipcMain.handle('save-file', async (e, name, text) => {
+    const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('downloads'), String(name || 'EdemPlayer.json')), filters: [{ name: 'JSON', extensions: ['json'] }] });
+    if (r.canceled || !r.filePath) return { __err: 'cancel' };
+    fs.writeFileSync(r.filePath, String(text), 'utf8');
+    return { ok: true, name: r.filePath };
   });
   ipcMain.handle('net-diag', (e, url) => netDiag(String(url || '')));
   // открыть страницу в системном браузере (получение токена Яндекс.Диска)

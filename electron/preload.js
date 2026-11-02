@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('native', {
   quit: () => ipcRenderer.send('quit'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   http: (o) => ipcRenderer.invoke('http', o),
+  clipboard: { read: () => ipcRenderer.invoke('clip-read'), write: (t) => ipcRenderer.invoke('clip-write', t) },
+  saveFile: (name, text) => ipcRenderer.invoke('save-file', name, text).then((r) => { if (r && r.__err) throw new Error(r.__err); return r; }),
   netDiag: (url) => ipcRenderer.invoke('net-diag', url),
   openUrl: (url) => ipcRenderer.invoke('open-url', url),
   update: {

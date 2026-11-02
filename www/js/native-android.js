@@ -36,6 +36,10 @@
     speech: function (lang) { return call('speech', lang || 'ru-RU').then(function (r) { return r && r.text || ''; }); },
     speechStop: function () { A.speechStop(); },
     saveFile: function (name, text) { return call('saveFile', String(name), String(text)); },
+    clipboard: {
+      read: function () { return call('clipRead').then(function (r) { return r && r.text || ''; }); },
+      write: function (t) { A.clipWrite(String(t == null ? '' : t)); return Promise.resolve(true); }
+    },
     update: {
       info: function () { return Promise.resolve(JSON.parse(A.updInfo())); },
       check: function () { return call('updCheck'); },

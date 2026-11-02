@@ -321,6 +321,8 @@
           var eye2 = navItem('div', 'btn eye', 'eye:sync'); eye2.textContent = '👁'; eye2.title = TV.t('show_hide');
           eye2.tvOk = function () { var on = code.textContent.indexOf('•') >= 0; code.textContent = on ? cur.label : cur.label.replace(/[A-Z0-9]/g, '•'); eye2.classList.toggle('on', on); };
           row2.appendChild(eye2);
+          var codeSrc = { tagName: 'DIV', value: cur.label };
+          clipButtons(row2, codeSrc, 'sync');
           mine.appendChild(row2);
           mine.appendChild(el('div', 'shint', TV.t('cloud_code_info')));
         });
@@ -452,7 +454,11 @@
       var fstat = el('div', 'sinfo', ''); 
       var frow = btnRow('filebtns');
       button(frow, TV.t('file_export'), 'fexp', function () {
-        TV.Cloud.exportFile().then(function (name) { fstat.textContent = TV.t('file_exported', { name: name }); }).catch(function (e) { fstat.textContent = TV.t('cloud_err', { e: e.message || e }); });
+        TV.Cloud.exportFile().then(function (name) { fstat.textContent = TV.t('file_exported_to', { name: name }); TV.toast(TV.t('file_exported_to', { name: name })); }).catch(function (e) {
+          var m = String(e && e.message || e);
+          if (/cancel|отмен/i.test(m)) return; // окно «Сохранить как» закрыли
+          fstat.textContent = TV.t('cloud_err', { e: m });
+        });
       });
       var fpick = el('input'); fpick.type = 'file'; fpick.accept = '.json,application/json'; fpick.style.display = 'none';
       fpick.addEventListener('change', function () {
@@ -838,6 +844,34 @@
     });
   }
 
+  // Кнопки «Копировать» и «Вставить» у поля ввода (удобно с пульта; Ctrl+C/V тоже работают)
+  function clipOk() { return !!(window.native && window.native.clipboard) || !!(navigator.clipboard && navigator.clipboard.readText); }
+  function clipRead() { return window.native && window.native.clipboard ? window.native.clipboard.read() : navigator.clipboard.readText(); }
+  function clipWrite(t) { return window.native && window.native.clipboard ? window.native.clipboard.write(t) : navigator.clipboard.writeText(t); }
+  function clipButtons(box, inp, key) {
+    if (!clipOk()) return;
+    var cp = navItem('div', 'btn eye clip', 'copy:' + key); cp.textContent = '⧉'; cp.title = TV.t('clip_copy');
+    cp.tvOk = function () {
+      var v = inp.value || inp.textContent || '';
+      if (!v) { TV.toast(TV.t('clip_empty')); return; }
+      Promise.resolve(clipWrite(v)).then(function () { TV.toast(TV.t('clip_copied')); }).catch(function () { TV.toast(TV.t('clip_fail')); });
+    };
+    box.appendChild(cp);
+    if (inp.tagName !== 'INPUT') return;
+    var ps = navItem('div', 'btn eye clip', 'paste:' + key); ps.textContent = '📋'; ps.title = TV.t('clip_paste');
+    ps.tvOk = function () {
+      Promise.resolve(clipRead()).then(function (t) {
+        t = String(t || '').trim();
+        if (!t) { TV.toast(TV.t('clip_empty')); return; }
+        inp.value = t;
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+        TV.toast(TV.t('clip_pasted'));
+      }).catch(function () { TV.toast(TV.t('clip_fail')); });
+    };
+    box.appendChild(ps);
+  }
+
   // поля с личными данными: ссылка на плейлист, ключ, домен, медиатека, токен, код синхронизации, своё облако
   var SECRET_FIELDS = { url: 1, key: 1, domain: 1, vportal: 1, yaToken: 1, cloudKey: 1, cloudUrl: 1 };
 
@@ -1011,15 +1045,16 @@
         inp.setAttribute('data-nav', ''); inp.setAttribute('data-key', 'in:' + prop);
         inp.addEventListener('input', function () { d[prop] = inp.value; });
         inp.tvOk = function () { inp.focus(); try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) { /* */ } };
+        var box = el('div', 'sfield'); box.appendChild(inp);
         if (SECRET_FIELDS[prop]) {
           // личное: скрыто звёздочками, 👁 — показать/скрыть
           inp.type = 'password'; inp.autocomplete = 'new-password';
-          var box = el('div', 'sfield'); box.appendChild(inp);
           var eye = navItem('div', 'btn eye', 'eye:' + prop); eye.textContent = '👁'; eye.title = TV.t('show_hide');
           eye.tvOk = function () { var on = inp.type === 'password'; inp.type = on ? 'text' : 'password'; eye.classList.toggle('on', on); };
           box.appendChild(eye);
-          row.appendChild(box);
-        } else row.appendChild(inp);
+        }
+        clipButtons(box, inp, prop);
+        row.appendChild(box);
         if (hint) row.appendChild(el('div', 'shint', hint));
         wrap.appendChild(row);
         return inp;

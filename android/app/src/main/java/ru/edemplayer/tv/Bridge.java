@@ -183,6 +183,32 @@ public class Bridge {
         a.ui.post(new Runnable() { @Override public void run() { a.saveFile(id, name, text); } });
     }
 
+    // ---------- буфер обмена ----------
+    @JavascriptInterface
+    public void clipRead(final String id) {
+        a.ui.post(new Runnable() { @Override public void run() {
+            String t = "";
+            try {
+                android.content.ClipboardManager cm = (android.content.ClipboardManager) a.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                if (cm != null && cm.hasPrimaryClip() && cm.getPrimaryClip().getItemCount() > 0) {
+                    CharSequence cs = cm.getPrimaryClip().getItemAt(0).coerceToText(a);
+                    if (cs != null) t = cs.toString();
+                }
+            } catch (Exception e) { /* */ }
+            try { a.reply(id, new JSONObject().put("text", t).toString()); } catch (Exception e) { a.reply(id, "{\"text\":\"\"}"); }
+        } });
+    }
+
+    @JavascriptInterface
+    public void clipWrite(final String text) {
+        a.ui.post(new Runnable() { @Override public void run() {
+            try {
+                android.content.ClipboardManager cm = (android.content.ClipboardManager) a.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("EdemPlayer", text));
+            } catch (Exception e) { /* */ }
+        } });
+    }
+
     // ---------- обновления интерфейса ----------
     @JavascriptInterface public String updInfo() { return a.updater.info(); }
 

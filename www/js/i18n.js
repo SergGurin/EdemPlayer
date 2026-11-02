@@ -569,6 +569,7 @@
 
   // ---- 1.7: Яндекс.Диск, отдельная вкладка медиатеки, история просмотра ----
   Object.assign(DICT.ru, {
+    clip_copy: 'Копировать', clip_paste: 'Вставить из буфера', clip_copied: 'Скопировано в буфер обмена', clip_pasted: 'Вставлено из буфера обмена', clip_empty: 'Буфер обмена пуст', clip_fail: 'Нет доступа к буферу обмена', file_exported_to: 'Настройки сохранены: {name}', 
     show_hide: 'Показать / скрыть', 
     tab_sys: 'Система', 
     s_history: 'История поиска', s_hist_clear: '✕ Очистить', s_hist_tip: 'OK — искать снова, долгое OK — удалить из истории', 
@@ -601,6 +602,7 @@
     ya_bad_token: 'Яндекс.Диск не принял токен — получите новый', ya_err: 'Яндекс.Диск: {e}', ya_open_hint: 'Откройте в браузере: {url}'
   });
   Object.assign(DICT.en, {
+    clip_copy: 'Copy', clip_paste: 'Paste from clipboard', clip_copied: 'Copied to clipboard', clip_pasted: 'Pasted from clipboard', clip_empty: 'Clipboard is empty', clip_fail: 'No clipboard access', file_exported_to: 'Settings saved: {name}', 
     show_hide: 'Show / hide', 
     tab_sys: 'System', 
     s_history: 'Search history', s_hist_clear: '✕ Clear', s_hist_tip: 'OK — search again, hold OK — remove', 
@@ -633,6 +635,7 @@
     ya_bad_token: 'Yandex Disk rejected the token — get a new one', ya_err: 'Yandex Disk: {e}', ya_open_hint: 'Open in a browser: {url}'
   });
   Object.assign(DICT.uk, {
+    clip_copy: 'Копіювати', clip_paste: 'Вставити з буфера', clip_copied: 'Скопійовано', clip_pasted: 'Вставлено', clip_empty: 'Буфер обміну порожній', clip_fail: 'Немає доступу до буфера обміну', file_exported_to: 'Налаштування збережено: {name}', 
     show_hide: 'Показати / сховати', 
     tab_sys: 'Система', 
     s_history: 'Історія пошуку', s_hist_clear: '✕ Очистити', s_hist_tip: 'OK — шукати знову, довге OK — видалити', 
@@ -653,6 +656,7 @@
     ya_need_token: 'Вкажіть OAuth-токен Яндекс.Диска', ya_bad_token: 'Яндекс.Диск не прийняв токен — отримайте новий', ya_err: 'Яндекс.Диск: {e}'
   });
   Object.assign(DICT.de, {
+    clip_copy: 'Kopieren', clip_paste: 'Aus Zwischenablage einfügen', clip_copied: 'Kopiert', clip_pasted: 'Eingefügt', clip_empty: 'Zwischenablage ist leer', clip_fail: 'Kein Zugriff auf die Zwischenablage', file_exported_to: 'Einstellungen gespeichert: {name}', 
     show_hide: 'Anzeigen / verbergen', 
     tab_sys: 'System', 
     s_history: 'Suchverlauf', s_hist_clear: '✕ Leeren', s_hist_tip: 'OK — erneut suchen, OK halten — entfernen', 
@@ -673,6 +677,7 @@
     ya_need_token: 'OAuth-Token für Yandex Disk angeben', ya_bad_token: 'Yandex Disk hat den Token abgelehnt — neuen holen', ya_err: 'Yandex Disk: {e}'
   });
   Object.assign(DICT.fr, {
+    clip_copy: 'Copier', clip_paste: 'Coller', clip_copied: 'Copié', clip_pasted: 'Collé', clip_empty: 'Presse-papiers vide', clip_fail: 'Pas d’accès au presse-papiers', file_exported_to: 'Paramètres enregistrés : {name}', 
     show_hide: 'Afficher / masquer', 
     tab_sys: 'Système', 
     s_history: 'Historique de recherche', s_hist_clear: '✕ Effacer', s_hist_tip: 'OK — rechercher, maintenir OK — supprimer', 
@@ -693,6 +698,7 @@
     ya_need_token: 'Indiquez le jeton OAuth Yandex Disk', ya_bad_token: 'Yandex Disk a refusé le jeton — obtenez-en un nouveau', ya_err: 'Yandex Disk : {e}'
   });
   Object.assign(DICT.es, {
+    clip_copy: 'Copiar', clip_paste: 'Pegar', clip_copied: 'Copiado', clip_pasted: 'Pegado', clip_empty: 'El portapapeles está vacío', clip_fail: 'Sin acceso al portapapeles', file_exported_to: 'Ajustes guardados: {name}', 
     show_hide: 'Mostrar / ocultar', 
     tab_sys: 'Sistema', 
     s_history: 'Historial de búsqueda', s_hist_clear: '✕ Borrar', s_hist_tip: 'OK — buscar de nuevo, mantener OK — quitar', 
