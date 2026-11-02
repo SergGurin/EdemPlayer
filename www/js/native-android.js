@@ -33,6 +33,7 @@
     openUrl: function (url) { A.openUrl(String(url)); return Promise.resolve(true); },
     http: function (o) { return call('http', JSON.stringify(o || {})); },
     netDiag: function (url) { return call('netDiag', String(url)); },
+    setDns: typeof A.setDns === 'function' ? function (m) { A.setDns(String(m)); } : undefined,
     speech: function (lang) { return call('speech', lang || 'ru-RU').then(function (r) { return r && r.text || ''; }); },
     speechStop: function () { A.speechStop(); },
     saveFile: function (name, text) { return call('saveFile', String(name), String(text)); },

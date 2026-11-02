@@ -140,12 +140,29 @@
         if (!d) return;
         add((d.proxy && d.proxy !== 'DIRECT' ? '• ' + TV.t('diag_proxy', { p: d.proxy }) : '• ' + TV.t('diag_direct')));
         if (!d.dns) return;
-        if (!d.dns.ok) { netBad = true; add('✖ DNS: ' + TV.t('diag_dns_fail', { host: d.host, code: d.dns.code })); return; }
-        add('✔ DNS: ' + d.host + ' → ' + d.dns.ips.slice(0, 3).join(', ') + ' (' + d.dns.ms + ' ms)');
-        // подставной локальный адрес: его выдаёт VPN/прокси-программа (Proxifier, Amnezia, Clash…) и сама же перехватывает
-        if (/^127\./.test(d.dns.ips[0]) && !/^127\.0\.0\.1$/.test(d.dns.ips[0]) && d.host !== 'localhost') add('⚠ ' + TV.t('diag_fakeip', { ip: d.dns.ips[0] }));
-        if (d.tcp && d.tcp.ok) add('✔ TCP ' + d.dns.ips[0] + ':' + d.port + ' (' + d.tcp.ms + ' ms)');
-        else if (d.tcp) { add('✖ TCP ' + d.dns.ips[0] + ':' + d.port + ': ' + d.tcp.code + ' (' + d.tcp.ms + ' ms) — ' + TV.t('diag_tcp_fail')); if (!d.proxy || d.proxy === 'DIRECT') netBad = true; }
+        var fake = false;
+        if (!d.dns.ok) { netBad = true; add('✖ DNS: ' + TV.t('diag_dns_fail', { host: d.host, code: d.dns.code })); }
+        else {
+          add('✔ DNS: ' + d.host + ' → ' + d.dns.ips.slice(0, 3).join(', ') + ' (' + d.dns.ms + ' ms)');
+          // подставной локальный адрес: его выдаёт VPN/прокси-программа (Proxifier, Amnezia, Clash…) и сама же перехватывает
+          fake = /^127\./.test(d.dns.ips[0]) && !/^127\.0\.0\.1$/.test(d.dns.ips[0]) && d.host !== 'localhost';
+          if (fake) add('⚠ ' + TV.t('diag_fakeip', { ip: d.dns.ips[0] }));
+          if (d.tcp && d.tcp.ok) add('✔ TCP ' + d.dns.ips[0] + ':' + d.port + ' (' + d.tcp.ms + ' ms)');
+          else if (d.tcp) { add('✖ TCP ' + d.dns.ips[0] + ':' + d.port + ': ' + d.tcp.code + ' (' + d.tcp.ms + ' ms) — ' + TV.t('diag_tcp_fail')); if (!d.proxy || d.proxy === 'DIRECT') netBad = true; }
+        }
+        // защищённый DNS (DoH): настоящий адрес сервера в обход DNS провайдера
+        if (d.doh) {
+          if (!d.doh.ok) { add('✖ ' + TV.t('diag_doh_fail', { code: d.doh.code })); return; }
+          add('✔ ' + TV.t('diag_doh', { via: d.doh.via }) + ': ' + d.host + ' → ' + d.doh.ips.slice(0, 3).join(', ') + ' (' + d.doh.ms + ' ms)');
+          if (d.doh.tcp && d.doh.tcp.ok) {
+            add('✔ TCP ' + d.doh.ips[0] + ':' + d.port + ' (' + d.doh.tcp.ms + ' ms)');
+            if (netBad) {
+              var mode = d.mode || TV.store.get('dnsMode', 'auto');
+              add('⚠ ' + TV.t(mode === 'off' ? 'diag_doh_need' : 'diag_doh_fix'));
+              netBad = mode === 'off';
+            }
+          } else if (d.doh.tcp) { add('✖ TCP ' + d.doh.ips[0] + ':' + d.port + ': ' + d.doh.tcp.code + ' (' + d.doh.tcp.ms + ' ms) — ' + TV.t('diag_ipblock')); netBad = true; }
+        }
       }).then(function () {
         var p = Promise.resolve(), ok = null;
         if (netBad) { add(TV.t('diag_blocked')); return lines; }

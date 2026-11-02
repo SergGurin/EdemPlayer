@@ -82,6 +82,10 @@ public class MainActivity extends Activity {
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
                 Uri u = req.getUrl();
                 if ("edp.local".equals(u.getHost()) && "/proxy".equals(u.getPath())) return Bridge.proxy(u.getQueryParameter("u"));
+                // домен заблокирован на DNS провайдера: плейлисты и видео — через защищённый DNS
+                String sc = u.getScheme();
+                if (("http".equals(sc) || "https".equals(sc)) && "GET".equals(req.getMethod()) && Doh.use(u.getHost()))
+                    return Bridge.proxy(u.toString(), req.getRequestHeaders());
                 return null;
             }
             @Override

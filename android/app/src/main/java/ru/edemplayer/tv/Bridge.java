@@ -83,7 +83,8 @@ public class Bridge {
             int timeout = o.optInt("timeout", 25000);
             JSONObject hdr = o.optJSONObject("headers");
             for (int hop = 0; hop < 6; hop++) {
-                HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+              try {
+                HttpURLConnection c = Doh.open(url);
                 c.setInstanceFollowRedirects(false);
                 c.setConnectTimeout(Math.min(timeout, 15000));
                 c.setReadTimeout(timeout);
@@ -109,6 +110,11 @@ public class Bridge {
                 c.disconnect();
                 return new JSONObject().put("status", st).put("type", type == null ? "" : type).put("text", text)
                         .put("ms", System.currentTimeMillis() - t0).toString();
+              } catch (UnknownHostException e) {
+                // системный DNS не нашёл сервер — повторить через защищённый DNS
+                if (Doh.mark(new URL(url).getHost())) { hop--; continue; }
+                throw e;
+              }
             }
             return fail("ERR", "too many redirects", t0);
         } catch (UnknownHostException e) { return fail("ENOTFOUND", e.getMessage(), t0); }
@@ -120,18 +126,33 @@ public class Bridge {
     }
 
     /** Прокси для фонового загрузчика: GET с переходами, ответ потоком и с разрешающими CORS-заголовками. */
-    static android.webkit.WebResourceResponse proxy(String url) {
+    static android.webkit.WebResourceResponse proxy(String url) { return proxy(url, null); }
+
+    /** То же для запросов страницы к доменам, которые идут через защищённый DNS (видео, плейлисты): с их заголовками. */
+    static android.webkit.WebResourceResponse proxy(String url, java.util.Map<String, String> rq) {
         java.util.Map<String, String> h = new java.util.HashMap<>();
         h.put("Access-Control-Allow-Origin", "*");
         h.put("Cache-Control", "no-store");
         try {
             for (int hop = 0; hop < 6; hop++) {
-                HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+                HttpURLConnection c;
+                try { c = Doh.open(url); } catch (UnknownHostException e) { if (Doh.mark(new URL(url).getHost())) { hop--; continue; } throw e; }
                 c.setInstanceFollowRedirects(false);
                 c.setConnectTimeout(20000); c.setReadTimeout(60000);
                 c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) EdemPlayer");
                 c.setRequestProperty("Accept-Encoding", "identity"); // gzip-файлы распаковывает сам загрузчик
-                int st = c.getResponseCode();
+                if (rq != null) for (java.util.Map.Entry<String, String> e : rq.entrySet()) {
+                    String k = e.getKey();
+                    if (k == null || k.equalsIgnoreCase("Host") || k.equalsIgnoreCase("Accept-Encoding") || k.equalsIgnoreCase("Origin")) continue;
+                    c.setRequestProperty(k, e.getValue());
+                }
+                int st;
+                try { st = c.getResponseCode(); } catch (UnknownHostException e) { if (Doh.mark(new URL(url).getHost())) { hop--; continue; } throw e; }
+                if (rq != null) for (java.util.Map.Entry<String, java.util.List<String>> e : c.getHeaderFields().entrySet()) {
+                    String k = e.getKey();
+                    if (k == null || e.getValue() == null || e.getValue().isEmpty() || k.equalsIgnoreCase("Content-Encoding") || k.equalsIgnoreCase("Transfer-Encoding") || k.toLowerCase().startsWith("access-control")) continue;
+                    h.put(k, e.getValue().get(0));
+                }
                 if (st >= 300 && st < 400 && c.getHeaderField("Location") != null) {
                     url = new URL(new URL(url), c.getHeaderField("Location")).toString(); c.disconnect(); continue;
                 }
@@ -173,30 +194,61 @@ public class Bridge {
                 o.put("host", u.getHost()).put("port", port);
                 String ph = System.getProperty("http.proxyHost");
                 o.put("proxy", ph == null || ph.isEmpty() ? "DIRECT" : "PROXY " + ph + ":" + System.getProperty("http.proxyPort"));
+                o.put("mode", Doh.mode);
+                String host = u.getHost();
                 long t0 = System.currentTimeMillis();
-                InetAddress[] ips;
-                try { ips = InetAddress.getAllByName(u.getHost()); }
+                InetAddress[] ips = null;
+                JSONObject tcp = null;
+                try { ips = InetAddress.getAllByName(host); }
                 catch (UnknownHostException e) {
                     o.put("dns", new JSONObject().put("ok", false).put("code", "ENOTFOUND").put("ms", System.currentTimeMillis() - t0));
-                    a.reply(id, o.toString()); return;
                 }
-                org.json.JSONArray arr = new org.json.JSONArray();
-                for (InetAddress ip : ips) arr.put(ip.getHostAddress());
-                o.put("dns", new JSONObject().put("ok", true).put("ips", arr).put("ms", System.currentTimeMillis() - t0));
-                t0 = System.currentTimeMillis();
-                Socket s = new Socket();
-                try {
-                    s.connect(new InetSocketAddress(ips[0], port), 8000);
-                    o.put("tcp", new JSONObject().put("ok", true).put("ms", System.currentTimeMillis() - t0));
-                } catch (SocketTimeoutException e) {
-                    o.put("tcp", new JSONObject().put("ok", false).put("code", "TIMEOUT").put("ms", System.currentTimeMillis() - t0));
-                } catch (Exception e) {
-                    o.put("tcp", new JSONObject().put("ok", false).put("code", e.getClass().getSimpleName()).put("ms", System.currentTimeMillis() - t0));
-                } finally { try { s.close(); } catch (Exception e) { /* */ } }
+                if (ips != null) {
+                    org.json.JSONArray arr = new org.json.JSONArray();
+                    for (InetAddress ip : ips) arr.put(ip.getHostAddress());
+                    o.put("dns", new JSONObject().put("ok", true).put("ips", arr).put("ms", System.currentTimeMillis() - t0));
+                    tcp = tcpTest(ips[0].getHostAddress(), port);
+                    o.put("tcp", tcp);
+                }
+                // системный DNS не нашёл адрес или сервер не отвечает — спросить защищённый DNS
+                if (!Doh.isIp(host) && (ips == null || !tcp.optBoolean("ok"))) {
+                    t0 = System.currentTimeMillis();
+                    try {
+                        Doh.forget(host);
+                        Object[] r = Doh.resolve(host);
+                        @SuppressWarnings("unchecked") java.util.List<String> l = (java.util.List<String>) r[0];
+                        JSONObject d = new JSONObject().put("ok", true).put("ips", new org.json.JSONArray(l)).put("via", r[1]).put("ms", System.currentTimeMillis() - t0);
+                        if (ips == null || !l.get(0).equals(ips[0].getHostAddress())) {
+                            JSONObject t2 = tcpTest(l.get(0), port);
+                            d.put("tcp", t2);
+                            if (ips == null && t2.optBoolean("ok")) Doh.mark(host);
+                        }
+                        o.put("doh", d);
+                    } catch (Exception e) {
+                        o.put("doh", new JSONObject().put("ok", false).put("code", String.valueOf(e.getMessage())).put("ms", System.currentTimeMillis() - t0));
+                    }
+                }
                 a.reply(id, o.toString());
             } catch (Exception e) { a.reply(id, err(String.valueOf(e.getMessage()))); }
         } });
     }
+
+    static JSONObject tcpTest(String ip, int port) throws org.json.JSONException {
+        long t0 = System.currentTimeMillis();
+        Socket s = new Socket();
+        try {
+            s.connect(new InetSocketAddress(ip, port), 8000);
+            return new JSONObject().put("ok", true).put("ms", System.currentTimeMillis() - t0);
+        } catch (SocketTimeoutException e) {
+            return new JSONObject().put("ok", false).put("code", "TIMEOUT").put("ms", System.currentTimeMillis() - t0);
+        } catch (Exception e) {
+            return new JSONObject().put("ok", false).put("code", e.getClass().getSimpleName()).put("ms", System.currentTimeMillis() - t0);
+        } finally { try { s.close(); } catch (Exception e) { /* */ } }
+    }
+
+    // режим защищённого DNS: auto | on | off
+    @JavascriptInterface
+    public void setDns(String m) { Doh.mode = "on".equals(m) || "off".equals(m) ? m : "auto"; }
 
     // ---------- голосовой ввод (системное распознавание) ----------
     @JavascriptInterface

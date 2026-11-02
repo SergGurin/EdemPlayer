@@ -98,6 +98,7 @@
     start: function () {
       // обновление интерфейса с GitHub: готово — предлагаем перезапуск (один раз на версию)
       if (window.native && window.native.update) window.native.update.onEvent(function (st) { App.onUpdate(st); });
+      if (window.native && window.native.setDns) window.native.setDns(TV.store.get('dnsMode', 'auto'));
       // фоновое обновление медиатеки — маленький индикатор рядом с часами
       TV.Vod.onBg = function (run, queued) {
         var b = document.getElementById('bgind'); if (!b) return;
@@ -295,6 +296,15 @@
       });
       row._last = sv;
       wrap.appendChild(out);
+      if (window.native && window.native.setDns) {
+        section(TV.t('dns_title'));
+        var dm = TV.store.get('dnsMode', 'auto');
+        var dr = btnRow('dnsmode');
+        [['auto', TV.t('dns_auto')], ['on', TV.t('dns_on')], ['off', TV.t('dns_off')]].forEach(function (m) {
+          button(dr, (dm === m[0] ? '◉ ' : '○ ') + m[1], 'dns:' + m[0], function () { TV.store.set('dnsMode', m[0]); window.native.setDns(m[0]); TV.Vod.reset(); rerender('dns:' + m[0]); }, dm === m[0] ? 'sel' : '');
+        });
+        wrap.appendChild(el('div', 'shint', TV.t('dns_hint')));
+      }
       section(TV.t('vod_hist'));
       var hr = btnRow('vodhist');
       button(hr, TV.t('vod_hist_clear') + ' (' + TV.Vod.history().length + ')', 'vhclear', function () {

@@ -18,6 +18,63 @@ function findPlayer() {
   return null;
 }
 
+// ---------- Защищённый DNS (DNS-over-HTTPS) ----------
+// Провайдер может блокировать домен только на своём DNS. Тогда адрес узнаём у Cloudflare/Google по HTTPS
+// (серверы указаны IP-адресами, сам их DNS не нужен). Режим: auto — DoH при неудаче системного DNS, on — всегда, off — никогда.
+const DOH = ['https://1.1.1.1/dns-query?name={h}&type=A', 'https://8.8.8.8/resolve?name={h}&type=A', 'https://9.9.9.9:5053/dns-query?name={h}&type=A'];
+const DOH_TPL = ['https://1.1.1.1/dns-query', 'https://8.8.8.8/dns-query'];
+let dnsMode = 'auto';
+const dohCache = new Map();
+function dohGet(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { Accept: 'application/dns-json' }, timeout: 6000 }, (res) => {
+      const ch = []; res.on('data', (c) => ch.push(c));
+      res.on('end', () => { try { resolve(JSON.parse(Buffer.concat(ch).toString('utf8'))); } catch (e) { reject(e); } });
+      res.on('error', reject);
+    });
+    req.on('timeout', () => req.destroy(Object.assign(new Error('timeout'), { code: 'TIMEOUT' })));
+    req.on('error', reject);
+  });
+}
+async function dohResolve(host) {
+  const c = dohCache.get(host);
+  if (c && Date.now() - c.t < 600000) return c;
+  let last = null;
+  for (const tpl of DOH) {
+    try {
+      const j = await dohGet(tpl.replace('{h}', encodeURIComponent(host)));
+      const ips = (j.Answer || []).filter((a) => a.type === 1).map((a) => a.data);
+      if (ips.length) { const r = { ips, via: new URL(tpl).hostname, t: Date.now() }; dohCache.set(host, r); return r; }
+      last = Object.assign(new Error('no A record'), { code: j.Status === 3 ? 'NXDOMAIN' : 'NOANSWER' });
+    } catch (e) { last = e; }
+  }
+  throw last || new Error('DoH failed');
+}
+function dnsLookup(host, opts, cb) {
+  if (typeof opts === 'function') { cb = opts; opts = {}; }
+  opts = opts || {};
+  const ret = (ips) => (opts.all ? cb(null, ips.map((a) => ({ address: a, family: 4 }))) : cb(null, ips[0], 4));
+  const viaDoh = (err) => dohResolve(host).then((r) => ret(r.ips), () => cb(err || Object.assign(new Error('getaddrinfo ENOTFOUND ' + host), { code: 'ENOTFOUND' })));
+  if (tcp.isIP(host) || dnsMode === 'off') return dns.lookup(host, opts, cb);
+  if (dnsMode === 'on') return viaDoh(null);
+  dns.lookup(host, opts, (err, a, f) => (err ? viaDoh(err) : cb(null, a, f)));
+}
+function applyDns(mode) {
+  dnsMode = ['on', 'off'].includes(mode) ? mode : 'auto';
+  try {
+    app.configureHostResolver({ enableBuiltInResolver: true, secureDnsMode: dnsMode === 'on' ? 'secure' : dnsMode === 'off' ? 'off' : 'automatic', secureDnsServers: dnsMode === 'off' ? [] : DOH_TPL });
+  } catch (e) { /* старый Electron */ }
+}
+function tcpTest(host, port) {
+  const t0 = Date.now();
+  return new Promise((res) => {
+    const sock = tcp.connect({ host, port, timeout: 8000 });
+    sock.on('connect', () => { sock.destroy(); res({ ok: true, ms: Date.now() - t0 }); });
+    sock.on('timeout', () => { sock.destroy(); res({ ok: false, code: 'TIMEOUT', ms: Date.now() - t0 }); });
+    sock.on('error', (e) => res({ ok: false, code: e.code || 'ERR', ms: Date.now() - t0 }));
+  });
+}
+
 // HTTP-запрос из основного процесса (Node): без Origin/CORS, с точной причиной ошибки
 function nodeRequest(o, hops) {
   return new Promise((resolve) => {
@@ -28,7 +85,7 @@ function nodeRequest(o, hops) {
     const headers = Object.assign({ 'User-Agent': app.userAgentFallback, 'Accept': '*/*' }, o.headers || {});
     const body = o.body != null ? Buffer.from(String(o.body), 'utf8') : null;
     if (body) headers['Content-Length'] = body.length;
-    const req = mod.request(u, { method: o.method || 'GET', headers, timeout: o.timeout || 25000 }, (res) => {
+    const req = mod.request(u, { method: o.method || 'GET', headers, timeout: o.timeout || 25000, lookup: dnsLookup }, (res) => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && (hops || 0) < 5) {
         res.resume();
         const next = new URL(res.headers.location, u).toString();
@@ -87,16 +144,22 @@ async function netDiag(url) {
   const port = Number(u.port) || (u.protocol === 'https:' ? 443 : 80);
   out.host = u.hostname; out.port = port;
   try { out.proxy = await (win ? win.webContents.session : require('electron').session.defaultSession).resolveProxy(url); } catch (e) { out.proxy = '?'; }
+  out.mode = dnsMode;
   let t0 = Date.now();
   try { const a = await dns.promises.lookup(u.hostname, { all: true }); out.dns = { ok: true, ips: a.map((x) => x.address), ms: Date.now() - t0 }; }
-  catch (e) { out.dns = { ok: false, code: e.code || 'ERR', ms: Date.now() - t0 }; return out; }
-  t0 = Date.now();
-  out.tcp = await new Promise((res) => {
-    const sock = tcp.connect({ host: out.dns.ips[0], port, timeout: 8000 });
-    sock.on('connect', () => { sock.destroy(); res({ ok: true, ms: Date.now() - t0 }); });
-    sock.on('timeout', () => { sock.destroy(); res({ ok: false, code: 'TIMEOUT', ms: Date.now() - t0 }); });
-    sock.on('error', (e) => res({ ok: false, code: e.code || 'ERR', ms: Date.now() - t0 }));
-  });
+  catch (e) { out.dns = { ok: false, code: e.code || 'ERR', ms: Date.now() - t0 }; }
+  if (out.dns.ok) out.tcp = await tcpTest(out.dns.ips[0], port);
+  // системный DNS не нашёл адрес, выдал подставной или сервер не отвечает — спросить защищённый DNS
+  const fake = out.dns.ok && /^127\./.test(out.dns.ips[0]) && out.dns.ips[0] !== '127.0.0.1';
+  if (!tcp.isIP(u.hostname) && (!out.dns.ok || fake || !out.tcp.ok)) {
+    t0 = Date.now();
+    try {
+      dohCache.delete(u.hostname);
+      const r = await dohResolve(u.hostname);
+      out.doh = { ok: true, ips: r.ips, via: r.via, ms: Date.now() - t0 };
+      if (!out.dns.ok || r.ips[0] !== out.dns.ips[0]) out.doh.tcp = await tcpTest(r.ips[0], port);
+    } catch (e) { out.doh = { ok: false, code: e.code || String(e.message || e), ms: Date.now() - t0 }; }
+  }
   return out;
 }
 const path = require('path');
@@ -182,6 +245,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  applyDns('auto'); // интерфейс затем передаст выбранный режим
   updater.prepare(); // готовое обновление интерфейса — подменить до открытия окна
   updater.onEvent = (st) => { if (win && !win.isDestroyed()) win.webContents.send('upd', st); };
   ipcMain.handle('upd-info', () => ({ app: app.getVersion(), ui: updater.active().version, shell: updater.SHELL, repo: updater.repo(), status: updater.status }));
@@ -211,7 +275,9 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('http', (e, o) => {
     if (!o || !/^https?:\/\//i.test(String(o.url))) return { error: 'BAD_URL', message: 'bad url' };
-    return o.engine === 'node' ? nodeRequest(o, 0) : chromiumRequest(o);
+    if (o.engine === 'node') return nodeRequest(o, 0);
+    // Chromium не нашёл адрес — повторить через Node с защищённым DNS
+    return chromiumRequest(o).then((r) => (r.error === 'ENOTFOUND' && dnsMode !== 'off' ? nodeRequest(o, 0).then((r2) => (r2.error ? r : r2)) : r));
   });
   // буфер обмена и сохранение файла (окно «Сохранить как»)
   ipcMain.handle('clip-read', () => clipboard.readText());
@@ -222,6 +288,7 @@ app.whenReady().then(() => {
     fs.writeFileSync(r.filePath, String(text), 'utf8');
     return { ok: true, name: r.filePath };
   });
+  ipcMain.on('dns-mode', (e, m) => applyDns(String(m || 'auto')));
   ipcMain.handle('net-diag', (e, url) => netDiag(String(url || '')));
   // открыть страницу в системном браузере (получение токена Яндекс.Диска)
   ipcMain.handle('open-url', (e, url) => { if (/^https:\/\//i.test(String(url))) { shell.openExternal(String(url)); return true; } return false; });
