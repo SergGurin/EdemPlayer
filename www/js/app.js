@@ -244,7 +244,7 @@
       var info = el('div', 'sinfo updinfo', ''); wrap.appendChild(info);
       var st = el('div', 'shint updst', ''); wrap.appendChild(st);
       function show(i) {
-        info.textContent = TV.t('upd_ver', { ui: i.ui, shell: i.app }) + (i.repo ? ' · GitHub: ' + i.repo : '');
+        info.textContent = TV.t('upd_ver', { ui: i.ui, shell: i.app }) + (i.ui !== i.app ? ' · ' + TV.t('upd_from_gh') : '') + (i.repo ? ' · GitHub: ' + i.repo : '');
         var s2 = self._upd || i.status || {};
         st.classList.toggle('warnt', s2.state === 'error' || s2.state === 'shell');
         st.textContent = !i.repo ? TV.t('upd_norepo') : s2.state ? TV.t('upd_st_' + s2.state, { v: s2.version || '', e: s2.error || '', p: s2.progress || 0 }) : '';
