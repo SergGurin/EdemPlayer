@@ -579,3 +579,8 @@ body.listmode .tile.letter.allg .ico { display: none; }
 .settings { max-width: 76em; overflow-x: hidden; }
 .settings .sbtns.tabs { flex-wrap: wrap; gap: .55em; }
 .settings .btn.tab { font-size: .95em; padding: .5em 1.05em; }
+
+/* плитка с веером постеров: название в две строки вместо обрезки */
+.tile.cat.hasfan .name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; }
+.tile.cat.hasfan .name, .tile.cat.hasfan .sub { max-width: calc(100% - 6.8em); }
+body.listmode .tile.cat.hasfan .name { display: block; white-space: nowrap; }

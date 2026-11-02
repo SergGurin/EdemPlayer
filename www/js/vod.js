@@ -22,7 +22,7 @@
     },
     config: function () { return V.parse(TV.store.get('vportal', '')); },
     enabled: function () { return !!V.config(); },
-    reset: function () { V.cache = {}; V.root = null; V._eps = {}; V.bg.queue = []; },
+    reset: function () { V.cache = {}; V.root = null; V._eps = {}; V._prev = {}; V.bg.queue = []; },
 
     // Запрос к API — только POST (GET сервер отклоняет), через основной процесс программы,
     // с заголовками как у OTT Navigator и ключом в X-Api-Key. Вариант тела, на который сервер
@@ -540,6 +540,44 @@
       var re = item.type === 'multistream' ? /сериал|serial|series|серіал|serie/i : /фильм|кино|movie|film|фільм|película/i;
       for (var j = 0; j < secs.length; j++) if (re.test(secs[j].title)) return 'sec:' + JSON.stringify(secs[j].request);
       return null;
+    },
+
+
+    // ---------- превью раздела для плитки: постеры и количество ----------
+    // Полный список (из памяти или с устройства), иначе — одна короткая страница с сервера (хранится сутки)
+    _prev: {},
+    preview: function (sec) {
+      var sid = 'sec:' + JSON.stringify(sec.request);
+      if (V._prev[sid]) return V._prev[sid];
+      var mem = V.cache[sid];
+      var fromItems = function (items, count) { return { items: items.filter(function (x) { return x && (x.imglr || x.img); }).slice(0, 40), count: count }; };
+      if (mem && mem.done && mem.items.length) return Promise.resolve(fromItems(mem.items, mem.items.length));
+      var key = 'vodprev:' + V._host() + ':' + sid;
+      var pr = V._prev[sid] = TV.idb.get(V._dbKey(sid)).then(function (full) {
+        if (full && full.items && full.items.length) return fromItems(full.items, full.items.length);
+        return TV.idb.get(key).then(function (pv) {
+          if (pv && Date.now() - pv.t < 24 * 3600 * 1000) return pv;
+          // запросы превью — по очереди, чтобы не нагружать сервер
+          V._prevQ = (V._prevQ || Promise.resolve()).then(function () {
+            var req = V.reqFor(sec, 'list'); req.limit = 24;
+            return V.request(req).then(function (j) {
+              var items = (j.items || []).filter(function (x) { return x && x.type && x.type !== 'next' && x.type !== 'category'; });
+              var r = fromItems(items, j.count || 0); r.t = Date.now();
+              TV.idb.set(key, r);
+              return r;
+            });
+          });
+          return V._prevQ;
+        });
+      });
+      pr.catch(function () { delete V._prev[sid]; });
+      return pr;
+    },
+    // постеры для плитки: свежие (по году) или по одному из разных разделов
+    posters: function (items, n, newest) {
+      var l = items.filter(function (x) { return x && (x.imglr || x.img); });
+      if (newest) l = l.slice().sort(function (a, b) { return (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0); });
+      return l.slice(0, n || 3).map(function (x) { return x.imglr || x.img; });
     },
 
     // Сортировка: по алфавиту или «новые сверху» (год, затем название)

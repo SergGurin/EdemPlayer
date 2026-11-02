@@ -1265,6 +1265,7 @@
         return { node: wrap, crumbs: [TV.t('vod')] };
       }
       var root = TV.Vod.root;
+      var prevs = []; // превью разделов — из них же постеры для «Года» и «Жанров»
       var hn = TV.Vod.history().length;
       if (hn) {
         var ht = navItem('div', 'tile cat all', 'vhist');
@@ -1281,11 +1282,13 @@
         var sid = 'sec:' + JSON.stringify(sct.request);
         catDecor(t, { hue: hueOf(sct.title) });
         (function (t2) {
-          var mem = TV.Vod.cache[sid];
-          var pick = function (items) { return items.filter(function (x) { return x && (x.imglr || x.img); }).slice(0, 12).sort(function (a, b) { return (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0); }).slice(0, 3).map(function (x) { return x.imglr || x.img; }); };
-          var subOf = function (n) { var sb = el('div', 'sub', TV.t('vod_count', { n: n.toLocaleString(TV.locale()) })); t2.insertBefore(sb, t2.children[1] || null); };
-          if (mem && mem.items.length) { posterFan(t2, pick(mem.items)); subOf(mem.items.length); }
-          else TV.idb.get(TV.Vod._dbKey(sid)).then(function (sv) { if (sv && sv.items) { posterFan(t2, pick(sv.items)); subOf(sv.items.length); } });
+          var p2 = TV.Vod.preview(sct);
+          prevs.push(p2);
+          p2.then(function (pv) {
+            if (!pv) return;
+            posterFan(t2, TV.Vod.posters(pv.items, 3, true));
+            if (pv.count) { var sb = el('div', 'sub', TV.t('vod_count', { n: pv.count.toLocaleString(TV.locale()) })); t2.insertBefore(sb, t2.children[1] || null); }
+          }).catch(function () { /* без картинок */ });
         })(t);
         t.tvOk = function () { self.push('vodlist', { id: 'sec:' + JSON.stringify(sct.request), req: TV.Vod.reqFor(sct, 'list'), title: sct.title }); };
         wrap.appendChild(t);
@@ -1296,6 +1299,15 @@
         catDecor(t, { hue: TV.Vod.genreFilter() === f ? 285 : 170, ico: TV.Vod.genreFilter() === f ? '🎭' : '📂' });
         t.appendChild(el('div', 'name', (isGenre ? TV.t('vod_genres') : f.title)));
         t.appendChild(el('div', 'sub', String(f.items.length)));
+        // «Год» — самые свежие постеры, «Жанры» — по одному из разных разделов
+        (function (t2, newest) {
+          Promise.all(prevs.map(function (q) { return q.catch(function () { return null; }); })).then(function (all) {
+            var pool = [];
+            if (newest) all.forEach(function (pv) { if (pv) pool = pool.concat(pv.items); });
+            else for (var k = 0; k < 8; k++) all.forEach(function (pv) { if (pv && pv.items[k * 3 + 1]) pool.push(pv.items[k * 3 + 1]); });
+            posterFan(t2, TV.Vod.posters(pool, 3, newest));
+          });
+        })(t, !isGenre);
         t.tvOk = function () { self.push('vodfilter', { fi: i }); };
         wrap.appendChild(t);
       });
