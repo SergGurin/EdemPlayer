@@ -575,3 +575,4 @@ body.listmode .tile.letter.allg .ico { display: none; }
 .btn.chip.clr::before { content: none; }
 .shero.small { padding: 1em 1em .4em; }
 .shero.small .sheroico { font-size: 2.6em; }
+.settings .sbtns.tabs { flex-wrap: nowrap; width: max-content; max-width: calc(100vw - 4em); }

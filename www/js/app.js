@@ -232,7 +232,7 @@
     onUpdate: function (st) {
       this._upd = st;
       var top = this.stack[this.stack.length - 1];
-      if (top && top.name === 'settings' && top.params.tab === 'view' && !this.playing && !Dialog.open) { top.focus = Nav.current && Nav.current.getAttribute('data-key'); this.render(); }
+      if (top && top.name === 'settings' && top.params.tab === 'sys' && !this.playing && !Dialog.open) { top.focus = Nav.current && Nav.current.getAttribute('data-key'); this.render(); }
       if (st.state === 'ready' && this._askedUpd !== st.version) {
         this._askedUpd = st.version;
         if (this.playing || Dialog.open) { TV.toast(TV.t('upd_ready_later', { v: st.version }), 6000); return; }
@@ -997,7 +997,7 @@
       // три независимые вкладки: настройки общие и не зависят от способа подключения
       var tab = p.tab || 'conn';
       var trow = btnRow('stabs'); trow.classList.add('tabs');
-      [['conn', TV.t('tab_conn')], ['vod', TV.t('tab_vod')], ['view', TV.t('tab_view')], ['lang', TV.t('tab_lang')], ['epg', TV.t('tab_epg')], ['cloud', TV.t('tab_cloud')]].forEach(function (t) {
+      [['conn', TV.t('tab_conn')], ['vod', TV.t('tab_vod')], ['view', TV.t('tab_view')], ['lang', TV.t('tab_lang')], ['epg', TV.t('tab_epg')], ['cloud', TV.t('tab_cloud')], ['sys', TV.t('tab_sys')]].forEach(function (t) {
         button(trow, t[1], 'tab:' + t[0], function () { p.tab = t[0]; rerender('tab:' + t[0]); }, tab === t[0] ? 'sel tab' : 'tab');
       });
       if (tab === 'conn') {
@@ -1173,6 +1173,7 @@
         wrap.appendChild(em);
         var er = btnRow('errbtn');
         button(er, TV.t('err_clear') + ' (' + Object.keys(TV.playErrs()).length + ')', 'errclr', function () { TV.store.set('playErr', {}); TV.toast(TV.t('err_cleared')); rerender('errclr'); });
+      } else if (tab === 'sys') {
         self.updSection(wrap, section, btnRow, button, rerender);
       } else {
       section(TV.t('epg_sources'));

@@ -569,9 +569,10 @@
 
   // ---- 1.7: Яндекс.Диск, отдельная вкладка медиатеки, история просмотра ----
   Object.assign(DICT.ru, {
+    tab_sys: 'Система', 
     s_history: 'История поиска', s_hist_clear: '✕ Очистить', s_hist_tip: 'OK — искать снова, долгое OK — удалить из истории', 
     s_recent: 'Недавние каналы', s_continue: 'Продолжить просмотр', 
-    upd_title: 'Обновления', upd_from_gh: 'интерфейс обновлён с GitHub', upd_na: 'Обновление доступно только в программе для Windows.', upd_ver: 'Версия {ui} (оболочка {shell})', upd_norepo: 'Источник обновлений не задан.', upd_check: '⟳ Проверить обновления', upd_restart: '↻ Перезапустить и обновить', upd_later: 'Позже', upd_ready_q: 'Загружено обновление {v}. Перезапустить программу сейчас?', upd_ready_later: 'Обновление {v} установится при следующем запуске', upd_shell: 'Вышла версия {v}: для неё нужен полный пакет программы — скачайте его с GitHub (Настройки → Вид → Обновления)', upd_st_checking: 'Проверяю…', upd_st_downloading: 'Загружаю версию {v}… {p}%', upd_st_ready: 'Обновление {v} загружено — установится при перезапуске', upd_st_latest: 'Установлена последняя версия', upd_st_shell: 'Вышла версия {v} — нужен полный пакет с GitHub', upd_st_error: 'Не удалось проверить: {e}', upd_st_off: 'Источник обновлений не задан', upd_st_idle: '', 
+    upd_title: 'Обновления', upd_from_gh: 'интерфейс обновлён с GitHub', upd_na: 'Обновление доступно только в программе для Windows.', upd_ver: 'Версия {ui} (оболочка {shell})', upd_norepo: 'Источник обновлений не задан.', upd_check: '⟳ Проверить обновления', upd_restart: '↻ Перезапустить и обновить', upd_later: 'Позже', upd_ready_q: 'Загружено обновление {v}. Перезапустить программу сейчас?', upd_ready_later: 'Обновление {v} установится при следующем запуске', upd_shell: 'Вышла версия {v}: для неё нужен полный пакет программы — скачайте его с GitHub (Настройки → Система)', upd_st_checking: 'Проверяю…', upd_st_downloading: 'Загружаю версию {v}… {p}%', upd_st_ready: 'Обновление {v} загружено — установится при перезапуске', upd_st_latest: 'Установлена последняя версия', upd_st_shell: 'Вышла версия {v} — нужен полный пакет с GitHub', upd_st_error: 'Не удалось проверить: {e}', upd_st_off: 'Источник обновлений не задан', upd_st_idle: '', 
     vod_series_n: { one: '{n} сериал', few: '{n} сериала', many: '{n} сериалов', other: '{n} сериала' }, 
     vod_season_n: 'Сезон {n}', vod_seasons_n: { one: '{n} сезон', few: '{n} сезона', many: '{n} сезонов', other: '{n} сезона' }, vod_continue: 'Продолжить просмотр', 
     tab_view: 'Вид', view_chans: 'Вид списков', view_tiles: 'Плитка', view_list: 'Список', view_hint: 'Как показывать категории, каналы, медиатеку и результаты поиска: плитками или строками.', err_marks: 'Отметки ошибок воспроизведения', err_mark_live: 'светло-красный — не работал прямой эфир или фильм', err_mark_play: 'жёлтый — не воспроизвелась запись из архива', err_clear: 'Снять все отметки', err_cleared: 'Отметки ошибок сняты', err_live_at: 'Ошибка прямого эфира: {t}', err_play_at: 'Ошибка воспроизведения: {t}', 
@@ -599,9 +600,10 @@
     ya_bad_token: 'Яндекс.Диск не принял токен — получите новый', ya_err: 'Яндекс.Диск: {e}', ya_open_hint: 'Откройте в браузере: {url}'
   });
   Object.assign(DICT.en, {
+    tab_sys: 'System', 
     s_history: 'Search history', s_hist_clear: '✕ Clear', s_hist_tip: 'OK — search again, hold OK — remove', 
     s_recent: 'Recent channels', s_continue: 'Continue watching', 
-    upd_title: 'Updates', upd_from_gh: 'UI updated from GitHub', upd_na: 'Updates are available only in the Windows app.', upd_ver: 'Version {ui} (shell {shell})', upd_norepo: 'No update source set.', upd_check: '⟳ Check for updates', upd_restart: '↻ Restart and update', upd_later: 'Later', upd_ready_q: 'Update {v} is downloaded. Restart the app now?', upd_ready_later: 'Update {v} will be installed on next start', upd_shell: 'Version {v} is out and needs the full app package — download it from GitHub (Settings → View → Updates)', upd_st_checking: 'Checking…', upd_st_downloading: 'Downloading {v}… {p}%', upd_st_ready: 'Update {v} downloaded — installs on restart', upd_st_latest: 'You have the latest version', upd_st_shell: 'Version {v} is out — full package needed from GitHub', upd_st_error: 'Check failed: {e}', upd_st_off: 'No update source set', upd_st_idle: '', 
+    upd_title: 'Updates', upd_from_gh: 'UI updated from GitHub', upd_na: 'Updates are available only in the Windows app.', upd_ver: 'Version {ui} (shell {shell})', upd_norepo: 'No update source set.', upd_check: '⟳ Check for updates', upd_restart: '↻ Restart and update', upd_later: 'Later', upd_ready_q: 'Update {v} is downloaded. Restart the app now?', upd_ready_later: 'Update {v} will be installed on next start', upd_shell: 'Version {v} is out and needs the full app package — download it from GitHub (Settings → System)', upd_st_checking: 'Checking…', upd_st_downloading: 'Downloading {v}… {p}%', upd_st_ready: 'Update {v} downloaded — installs on restart', upd_st_latest: 'You have the latest version', upd_st_shell: 'Version {v} is out — full package needed from GitHub', upd_st_error: 'Check failed: {e}', upd_st_off: 'No update source set', upd_st_idle: '', 
     vod_series_n: { one: '{n} series', other: '{n} series' }, 
     vod_season_n: 'Season {n}', vod_seasons_n: { one: '{n} season', other: '{n} seasons' }, vod_continue: 'Continue watching', 
     tab_view: 'View', view_chans: 'List view', view_tiles: 'Tiles', view_list: 'List', view_hint: 'How categories, channels, the media library and search results are shown: tiles or rows.', err_marks: 'Playback error marks', err_mark_live: 'light red — live stream or movie failed', err_mark_play: 'yellow — archive recording failed', err_clear: 'Clear all marks', err_cleared: 'Error marks cleared', err_live_at: 'Live stream error: {t}', err_play_at: 'Playback error: {t}', 
@@ -629,6 +631,7 @@
     ya_bad_token: 'Yandex Disk rejected the token — get a new one', ya_err: 'Yandex Disk: {e}', ya_open_hint: 'Open in a browser: {url}'
   });
   Object.assign(DICT.uk, {
+    tab_sys: 'Система', 
     s_history: 'Історія пошуку', s_hist_clear: '✕ Очистити', s_hist_tip: 'OK — шукати знову, довге OK — видалити', 
     s_recent: 'Нещодавні канали', s_continue: 'Продовжити перегляд', 
     vod_series_n: { one: '{n} серіал', few: '{n} серіали', many: '{n} серіалів', other: '{n} серіалу' }, 
@@ -647,6 +650,7 @@
     ya_need_token: 'Вкажіть OAuth-токен Яндекс.Диска', ya_bad_token: 'Яндекс.Диск не прийняв токен — отримайте новий', ya_err: 'Яндекс.Диск: {e}'
   });
   Object.assign(DICT.de, {
+    tab_sys: 'System', 
     s_history: 'Suchverlauf', s_hist_clear: '✕ Leeren', s_hist_tip: 'OK — erneut suchen, OK halten — entfernen', 
     s_recent: 'Zuletzt gesehene Sender', s_continue: 'Weiterschauen', 
     vod_series_n: { one: '{n} Serie', other: '{n} Serien' }, 
@@ -665,6 +669,7 @@
     ya_need_token: 'OAuth-Token für Yandex Disk angeben', ya_bad_token: 'Yandex Disk hat den Token abgelehnt — neuen holen', ya_err: 'Yandex Disk: {e}'
   });
   Object.assign(DICT.fr, {
+    tab_sys: 'Système', 
     s_history: 'Historique de recherche', s_hist_clear: '✕ Effacer', s_hist_tip: 'OK — rechercher, maintenir OK — supprimer', 
     s_recent: 'Chaînes récentes', s_continue: 'Reprendre', 
     vod_series_n: { one: '{n} série', other: '{n} séries' }, 
@@ -683,6 +688,7 @@
     ya_need_token: 'Indiquez le jeton OAuth Yandex Disk', ya_bad_token: 'Yandex Disk a refusé le jeton — obtenez-en un nouveau', ya_err: 'Yandex Disk : {e}'
   });
   Object.assign(DICT.es, {
+    tab_sys: 'Sistema', 
     s_history: 'Historial de búsqueda', s_hist_clear: '✕ Borrar', s_hist_tip: 'OK — buscar de nuevo, mantener OK — quitar', 
     s_recent: 'Canales recientes', s_continue: 'Seguir viendo', 
     vod_series_n: { one: '{n} serie', other: '{n} series' }, 
