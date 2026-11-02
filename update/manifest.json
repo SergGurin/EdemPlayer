@@ -1,10 +1,10 @@
 {
  "app": "EdemPlayer",
- "version": "2.1.7",
+ "version": "2.1.8",
  "shell": 1,
- "date": "2026-11-02T17:45:26.157Z",
+ "date": "2026-11-02T17:47:14.477Z",
  "files": {
-  "www/css/app.css": "f8e2be703ca14df26cac22026f3039bb14ad1241dcf7258f1909a8a07315f01a",
+  "www/css/app.css": "07218d2c4b5d1f25ed045f3e44505056b5e619e88a8b72ecb6eec2e572ef5545",
   "www/index.html": "f567e3862a4ff88c3c8dbe01916429de2c5eaf3af18de50e79d5a742e976e2ec",
   "www/js/app.js": "f5384ed87479bdb17a807b8dee2ee310102473741612f66c9eb26130b69e584d",
   "www/js/catchup.js": "e88956965a04ac812c75892442b063d9551b6ad969289718696a7d56ae36a510",
