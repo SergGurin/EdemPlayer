@@ -812,6 +812,29 @@
     return out;
   }
 
+  // Фильтр медиатеки (жанр/год): запрос и оформление плитки
+  function filterReq(it) { var r = {}; Object.keys(it.request).forEach(function (k) { r[k] = it.request[k]; }); if (r.filter == null) r.filter = 'on'; return r; }
+  // y — только фильмы этого года (выбор жанра внутри года)
+  function filterDecor(t, it, y) {
+    var yr = /^\s*(\d{4})\s*$/.exec(it.title || '');
+    if (yr) catDecor(t, { hue: (parseInt(yr[1], 10) * 23) % 360, ico: yr[1].slice(2), letter: true });
+    else catDecor(t, { hue: hueOf(it.title), ico: genreIcon(it.title) || TV.initials(it.title).charAt(0), letter: !genreIcon(it.title) });
+    var yy = y || (yr && yr[1]), fid = 'flt:' + JSON.stringify(filterReq(it));
+    // постеры: из сохранённого списка этого фильтра; для года — из любых сохранённых разделов
+    var pick = function (items) {
+      return items.filter(function (x) { return x && (x.imglr || x.img) && (!yy || String(x.year) === yy); }).slice(0, 40)
+        .sort(function (a, b) { return (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0); }).slice(0, 3).map(function (x) { return x.imglr || x.img; });
+    };
+    var mem = TV.Vod.cache[fid];
+    if (mem && mem.items.length && pick(mem.items).length) { posterFan(t, pick(mem.items)); return; }
+    TV.idb.get(TV.Vod._dbKey(fid)).then(function (sv) {
+      if (sv && sv.items && sv.items.length && pick(sv.items).length) { posterFan(t, pick(sv.items)); return; }
+      if (yr || !y) { if (yr) TV.Vod.sample().then(function (items) { posterFan(t, pick(items)); }); return; }
+      // жанр внутри года, списка жанра ещё нет — постеры этого года из сохранённых разделов
+      TV.Vod.sample().then(function (items) { var l = pick(items); if (l.length) posterFan(t, l); });
+    });
+  }
+
   function logoBox(ch, cls) {
     var box = el('div', cls || 'logo');
     var src = ch.logo || EPG.icons[ch.key];
@@ -1328,31 +1351,39 @@
       f.items.forEach(function (it, i) {
         var t = navItem('div', 'tile cat', 'vg:' + i);
         t.appendChild(el('div', 'name', it.title));
-        var yr = /^\s*(\d{4})\s*$/.exec(it.title || '');
-        var rq = {}; Object.keys(it.request).forEach(function (k) { rq[k] = it.request[k]; }); if (rq.filter == null) rq.filter = 'on';
-        if (yr) catDecor(t, { hue: (parseInt(yr[1], 10) * 23) % 360, ico: yr[1].slice(2), letter: true });
-        else catDecor(t, { hue: hueOf(it.title), ico: genreIcon(it.title) || TV.initials(it.title).charAt(0), letter: !genreIcon(it.title) });
-        // постеры: жанр — из сохранённого списка жанра; год — из сохранённых разделов
-        (function (t2, y, fid) {
-          var pick = function (items) {
-            return items.filter(function (x) { return x && (x.imglr || x.img) && (!y || String(x.year) === y); }).slice(0, 40)
-              .sort(function (a, b) { return (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0); }).slice(0, 3).map(function (x) { return x.imglr || x.img; });
-          };
-          var mem = TV.Vod.cache[fid];
-          if (mem && mem.items.length) { posterFan(t2, pick(mem.items)); return; }
-          TV.idb.get(TV.Vod._dbKey(fid)).then(function (sv) {
-            if (sv && sv.items && sv.items.length) { posterFan(t2, pick(sv.items)); return; }
-            if (y) TV.Vod.sample().then(function (items) { posterFan(t2, pick(items)); });
-          });
-        })(t, yr && yr[1], 'flt:' + JSON.stringify(rq));
+        filterDecor(t, it, null);
         t.tvOk = function () {
-          var req = {}; Object.keys(it.request).forEach(function (k) { req[k] = it.request[k]; });
-          if (req.filter == null) req.filter = 'on';
+          var req = filterReq(it);
+          // год → затем выбор жанра (если в медиатеке есть жанры)
+          if (!isGenre && TV.Vod.genreFilter() && /^\s*\d{4}\s*$/.test(it.title || '')) { self.push('vodyear', { fi: p.fi, yi: i }); return; }
           self.push('vodlist', { id: 'flt:' + JSON.stringify(req), req: req, title: it.title });
         };
         wrap.appendChild(t);
       });
       return { node: wrap, crumbs: [TV.t('vod'), isGenre ? TV.t('vod_genres') : f.title] };
+    },
+
+    // Год выбран — выбор жанра: «Все жанры» первым, затем жанры (год ∩ жанр)
+    vodyear: function (p) {
+      var self = this, f = TV.Vod.root.filters[p.fi], yit = f.items[p.yi], g = TV.Vod.genreFilter();
+      var yreq = filterReq(yit), yid = 'flt:' + JSON.stringify(yreq), y = String(yit.title).trim();
+      var wrap = el('div', 'grid cats'); wrap.setAttribute('data-zone', 'vodyr');
+      var all = navItem('div', 'tile cat all', 'vyg:*');
+      all.appendChild(el('div', 'name', TV.t('vod_all_genres')));
+      catDecor(all, { hue: (parseInt(y, 10) * 23) % 360, ico: y.slice(2), letter: true });
+      all.tvOk = function () { self.push('vodlist', { id: yid, req: yreq, title: TV.t('vod_all_genres'), parentTitle: y }); };
+      wrap.appendChild(all);
+      g.items.forEach(function (it, i) {
+        var t = navItem('div', 'tile cat', 'vyg:' + i);
+        t.appendChild(el('div', 'name', it.title));
+        filterDecor(t, it, y);
+        t.tvOk = function () {
+          var greq = filterReq(it), gid = 'flt:' + JSON.stringify(greq);
+          self.push('vodlist', { id: 'x:' + yid + '&' + gid, inter: [{ id: yid, req: yreq, title: y }, { id: gid, req: greq, title: it.title }], title: it.title, parentTitle: y });
+        };
+        wrap.appendChild(t);
+      });
+      return { node: wrap, crumbs: [TV.t('vod'), f.title, y] };
     },
 
     vodlist: function (p, entry) {
@@ -1371,6 +1402,7 @@
       wrap.appendChild(grid);
       // данные: раздел/фильтр/все жанры; перерисовка по мере загрузки страниц (не чаще раза в 0,8 с)
       var c = p.all ? TV.Vod.cache.__all__ : TV.Vod.cache[p.id];
+      if (p.inter && c && !c.emit) c = null;
       if (!c || !entry._sub) {
         entry._sub = true;
         var pending = false;
@@ -1382,7 +1414,7 @@
           // готовый список (из кэша или после фонового обновления) — сразу; при первой загрузке — не чаще раза в 0,8 с
           setTimeout(function () { pending = false; if (self.stack[self.stack.length - 1] === entry && !self.playing && !Dialog.open && !(document.activeElement && /INPUT/.test(document.activeElement.tagName))) { entry.focus = Nav.current && Nav.current.getAttribute('data-key'); self.render(); } }, cc && cc.done ? 30 : 800);
         };
-        c = p.all ? TV.Vod.listAll(onUp) : TV.Vod.list(p.id, p.req, onUp, p.title);
+        c = p.all ? TV.Vod.listAll(onUp) : p.inter ? TV.Vod.listInter(p.id, p.inter, onUp) : TV.Vod.list(p.id, p.req, onUp, p.title);
       }
       entry._sig = c.items.length + ':' + c.done + ':' + (c.t || 0) + ':' + (c.error || '');
       var items = mode === 'server' ? c.items.filter(function (x) { return x && x.type !== 'next'; }) : TV.Vod.sorted(TV.Vod.arrange(c.items), mode);

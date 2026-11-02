@@ -313,6 +313,25 @@
       return c;
     },
 
+
+    // Пересечение двух списков (год ∩ жанр): элементы первого, которые есть во втором
+    listInter: function (id, parts, onUpdate) {
+      var c = V.cache[id];
+      if (c) { c.listeners.push(onUpdate); onUpdate(c); return c; }
+      c = V.cache[id] = { items: [], seen: {}, done: false, error: null, listeners: [onUpdate], meta: null };
+      c.emit = function () { c.listeners.forEach(function (f) { try { f(c); } catch (e) { /* */ } }); };
+      function rebuild() {
+        var a = V.cache[parts[0].id], b = V.cache[parts[1].id];
+        if (!a || !b) return;
+        var items = a.items.filter(function (it) { return b.seen[V._keyItem(it)]; });
+        V._setItems(c, items);
+        c.done = a.done && b.done; c.error = a.error || b.error; c.t = Math.min(a.t || 0, b.t || 0) || 0;
+        c.emit();
+      }
+      parts.forEach(function (pt) { V.list(pt.id, pt.req, rebuild, pt.title); });
+      return c;
+    },
+
     // «Все жанры»: все разделы вместе (пересобирается при обновлении любого раздела)
     listAll: function (onUpdate) {
       var id = '__all__', c = V.cache[id];
