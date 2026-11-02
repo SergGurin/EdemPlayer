@@ -38,6 +38,8 @@ function parseTime(s) {
   return t;
 }
 
+// Поток текста XMLTV: fetch → (gzip → распаковка) → UTF-8. Возвращает { read() → { done, value: строка } }.
+// Новые браузеры — DecompressionStream; старые (WebView Android 9) — встроенный pako и TextDecoder.
 async function openStream(url) {
   var res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -45,16 +47,45 @@ async function openStream(url) {
   var first = await reader.read();
   var head = first.value || new Uint8Array(0);
   var gz = head.length > 1 && head[0] === 0x1f && head[1] === 0x8b;
-  var stream = new ReadableStream({
-    start: function (c) { if (head.length) c.enqueue(head); if (first.done) c.close(); },
-    pull: async function (c) {
-      var r = await reader.read();
-      if (r.done) c.close(); else c.enqueue(r.value);
+  var td = new TextDecoder('utf-8');
+  var out = [], pending = head.length ? head : null, ended = !!first.done, inf = null;
+  if (gz && typeof DecompressionStream !== 'undefined') {
+    // быстрый путь: распаковка средствами браузера
+    var src = reader; // сжатые данные (не путать с reader распакованного потока ниже)
+    var stream = new ReadableStream({
+      start: function (c) { if (pending) c.enqueue(pending); pending = null; if (ended) c.close(); },
+      pull: async function (c) { var r = await src.read(); if (r.done) c.close(); else c.enqueue(r.value); },
+      cancel: function () { src.cancel(); }
+    }).pipeThrough(new DecompressionStream('gzip'));
+    reader = stream.getReader(); ended = false; gz = false;
+  } else if (gz) {
+    if (!self.pako) importScripts('../vendor/pako_inflate.min.js');
+    inf = new pako.Inflate();
+    inf.onData = function (c) { out.push(td.decode(c, { stream: true })); };
+  }
+  return {
+    read: async function () {
+      for (;;) {
+        if (out.length) return { done: false, value: out.shift() };
+        if (ended) return { done: true, value: undefined };
+        var chunk;
+        if (pending) { chunk = pending; pending = null; }
+        else {
+          var r = await reader.read();
+          if (r.done) {
+            ended = true;
+            if (inf) { inf.push(new Uint8Array(0), true); if (inf.err) throw new Error('gzip: ' + inf.msg); }
+            var tail = td.decode(); if (tail) out.push(tail);
+            continue;
+          }
+          chunk = r.value;
+        }
+        if (inf) { inf.push(chunk, false); if (inf.err) throw new Error('gzip: ' + inf.msg); }
+        else { var t = td.decode(chunk, { stream: true }); if (t) out.push(t); }
+      }
     },
-    cancel: function () { reader.cancel(); }
-  });
-  if (gz) stream = stream.pipeThrough(new DecompressionStream('gzip'));
-  return stream.pipeThrough(new TextDecoderStream('utf-8')).getReader();
+    cancel: function () { try { reader.cancel(); } catch (e) { /* */ } }
+  };
 }
 
 /*

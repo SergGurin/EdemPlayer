@@ -232,6 +232,8 @@
         var blob = new Blob([data], { type: 'application/json' });
         var d = new Date(), pad = TV.pad;
         var name = 'EdemPlayer-settings-' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '.json';
+        // Android: системный диалог «Сохранить как» (скачивание из WebView не работает)
+        if (window.native && window.native.saveFile) return window.native.saveFile(name, data).then(function (r) { return (r && r.name) || name; });
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob); a.download = name;
         document.body.appendChild(a); a.click();

@@ -53,7 +53,29 @@ window.TV = window.TV || {};
   };
 
   var toastTimer = null;
+  // ---------- личные данные не показываются на экране ----------
+  // Значения из настроек (ключ, ссылки, токены, коды) в любом выводимом тексте заменяются на ***
+  TV.secrets = function () {
+    var g = function (k) { try { return String(TV.store.get(k, '') || ''); } catch (e) { return ''; } };
+    var l = [g('accessKey'), g('playlistUrl'), g('channelDomain'), g('vportal'), g('yaToken'), g('syncCode'), g('cloudUrl')];
+    var vp = /\[key:([^\]]+)\]\s*(\S+)/.exec(g('vportal')); if (vp) { l.push(vp[1], vp[2]); }
+    // и сами адреса серверов из личных ссылок
+    [g('playlistUrl'), vp && vp[2], g('cloudUrl')].forEach(function (u) { try { if (u) l.push(new URL(u).host); } catch (e) { /* */ } });
+    var sc = g('syncCode'); if (sc.length === 12) l.push(sc.slice(0, 4) + '-' + sc.slice(4, 8) + '-' + sc.slice(8));
+    return l.filter(function (x) { return x && x.length >= 6; }).sort(function (a, b) { return b.length - a.length; });
+  };
+  TV.mask = function (text) {
+    var s = String(text == null ? '' : text);
+    TV.secrets().forEach(function (x) { s = s.split(x).join('***'); });
+    return s;
+  };
+  // адрес: токеноподобные части пути и значения параметров → ***
+  TV.maskUrl = function (u) {
+    var s = TV.mask(u);
+    return s.replace(/([?&][^=&#]+=)[^&#]+/g, '$1***').replace(/\/([A-Za-z0-9_-]{12,})(?=\/|$|\?)/g, '/***');
+  };
   TV.toast = function (msg, ms) {
+    msg = TV.mask(msg);
     var t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');

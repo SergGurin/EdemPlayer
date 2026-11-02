@@ -274,7 +274,6 @@
       var self = this;
       section(TV.t('vod_section'));
       var inp = field(TV.t('vod_field'), 'vportal', 'portal::[key:…]http://…/api/v1/', TV.t('vod_field_hint'));
-      inp.type = 'password'; // ключ не светим на экране
       var out = el('div', 'sinfo vdiag', ''); 
       function store() {
         var vp = (d.vportal || '').trim();
@@ -290,7 +289,7 @@
         out.textContent = TV.t('vod_checking');
         function show(lines) {
           out.innerHTML = '';
-          lines.forEach(function (l) { out.appendChild(el('div', /^[✖⚠]/.test(l) ? 'warnt' : '', l)); });
+          lines.forEach(function (l) { out.appendChild(el('div', /^[✖⚠]/.test(l) ? 'warnt' : '', TV.mask(l))); });
         }
         TV.Vod.diagnose(show).then(show);
       });
@@ -317,7 +316,12 @@
           mine.innerHTML = '';
           if (!cur) { mine.appendChild(el('div', 'shint', TV.t('cloud_code_new'))); return; }
           mine.appendChild(el('div', 'shint', TV.t('cloud_uses_code')));
-          mine.appendChild(el('div', 'synccode', cur.label));
+          var code = el('div', 'synccode', cur.label.replace(/[A-Z0-9]/g, '•'));
+          var row2 = el('div', 'sfield'); row2.appendChild(code);
+          var eye2 = navItem('div', 'btn eye', 'eye:sync'); eye2.textContent = '👁'; eye2.title = TV.t('show_hide');
+          eye2.tvOk = function () { var on = code.textContent.indexOf('•') >= 0; code.textContent = on ? cur.label : cur.label.replace(/[A-Z0-9]/g, '•'); eye2.classList.toggle('on', on); };
+          row2.appendChild(eye2);
+          mine.appendChild(row2);
           mine.appendChild(el('div', 'shint', TV.t('cloud_code_info')));
         });
       }
@@ -336,7 +340,6 @@
         if (d.yaToken == null) d.yaToken = TV.store.get('yaToken', '');
         if (d.yaFolder == null) d.yaFolder = TV.store.get('yaFolder', '') || 'EdemPlayer';
         var tk = field(TV.t('ya_token'), 'yaToken', TV.t('ya_token_ph'), TV.t('ya_token_hint'));
-        tk.type = 'password';
         tk.addEventListener('change', function () { TV.store.set('yaToken', (d.yaToken || '').trim()); });
         var fd = field(TV.t('ya_folder'), 'yaFolder', 'EdemPlayer', TV.t('ya_folder_hint'));
         fd.addEventListener('change', function () { TV.store.set('yaFolder', (d.yaFolder || '').trim()); });
@@ -835,6 +838,9 @@
     });
   }
 
+  // поля с личными данными: ссылка на плейлист, ключ, домен, медиатека, токен, код синхронизации, своё облако
+  var SECRET_FIELDS = { url: 1, key: 1, domain: 1, vportal: 1, yaToken: 1, cloudKey: 1, cloudUrl: 1 };
+
   function logoBox(ch, cls) {
     var box = el('div', cls || 'logo');
     var src = ch.logo || EPG.icons[ch.key];
@@ -1005,7 +1011,15 @@
         inp.setAttribute('data-nav', ''); inp.setAttribute('data-key', 'in:' + prop);
         inp.addEventListener('input', function () { d[prop] = inp.value; });
         inp.tvOk = function () { inp.focus(); try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) { /* */ } };
-        row.appendChild(inp);
+        if (SECRET_FIELDS[prop]) {
+          // личное: скрыто звёздочками, 👁 — показать/скрыть
+          inp.type = 'password'; inp.autocomplete = 'new-password';
+          var box = el('div', 'sfield'); box.appendChild(inp);
+          var eye = navItem('div', 'btn eye', 'eye:' + prop); eye.textContent = '👁'; eye.title = TV.t('show_hide');
+          eye.tvOk = function () { var on = inp.type === 'password'; inp.type = on ? 'text' : 'password'; eye.classList.toggle('on', on); };
+          box.appendChild(eye);
+          row.appendChild(box);
+        } else row.appendChild(inp);
         if (hint) row.appendChild(el('div', 'shint', hint));
         wrap.appendChild(row);
         return inp;
@@ -1208,7 +1222,7 @@
       d.epgList.forEach(function (u, i) {
         var r = el('div', 'erow');
         r.appendChild(el('span', 'enum', String(i + 1)));
-        r.appendChild(el('span', 'eurl', u));
+        r.appendChild(el('span', 'eurl', TV.maskUrl(u)));
         var z = el('span', 'ebtns'); z.setAttribute('data-zone', 'e' + i);
         if (i > 0) { var up = navItem('span', 'btn small', 'eup:' + i); up.textContent = '↑'; up.title = TV.t('up'); up.tvOk = function () { var t = d.epgList[i - 1]; d.epgList[i - 1] = u; d.epgList[i] = t; rerender('eup:' + (i - 1 || 1)); }; z.appendChild(up); }
         var del = navItem('span', 'btn small', 'edel:' + i); del.textContent = TV.t('del');
@@ -1222,7 +1236,7 @@
       fixed.forEach(function (x, i) {
         var r = el('div', 'erow fixed');
         r.appendChild(el('span', 'enum', String(d.epgList.length + i + 1)));
-        r.appendChild(el('span', 'eurl', x[0]));
+        r.appendChild(el('span', 'eurl', TV.maskUrl(x[0])));
         r.appendChild(el('span', 'etag', x[1]));
         elist.appendChild(r);
       });
@@ -1264,7 +1278,7 @@
         wrap.appendChild(el('div', 'shint warnt', TV.t('epg_stale', { n: EPG.stale.length, list: EPG.stale.slice(0, 40).join(', ') + (EPG.stale.length > 40 ? '…' : '') })));
       }
       if (EPG.errors && EPG.errors.length && !EPG.loading) {
-        wrap.appendChild(el('div', 'shint warnt', TV.t('epg_errors', { list: EPG.errors.join('; ') })));
+        wrap.appendChild(el('div', 'shint warnt', TV.t('epg_errors', { list: TV.maskUrl(EPG.errors.join('; ')) })));
       }
       }
       return { node: wrap, crumbs: [{ label: TV.t('settings'), go: function () { p.tab = 'conn'; rerender('tab:conn'); } }, TV.t('tab_' + tab)] };
@@ -2161,6 +2175,7 @@
     },
 
     showErr: function (msg, offerExternal, kind) {
+      msg = TV.mask(msg);
       var self = this;
       // отметить в списках: прямой эфир и фильм — светло-красным, архив — жёлтым
       if (this.ch) {
@@ -2211,7 +2226,7 @@
       box.innerHTML = '';
       box.appendChild(el('div', 'ptitle', TV.t('i_title')));
       rows.forEach(function (r) {
-        var d = el('div', 'prow'); d.appendChild(el('span', 'pk', r[0] === 'mode' ? TV.t('i_mode') : TV.t(r[0]))); d.appendChild(el('span', 'pv', r[1])); box.appendChild(d);
+        var d = el('div', 'prow'); d.appendChild(el('span', 'pk', r[0] === 'mode' ? TV.t('i_mode') : TV.t(r[0]))); d.appendChild(el('span', 'pv', TV.mask(r[1]))); box.appendChild(d);
       });
     },
 

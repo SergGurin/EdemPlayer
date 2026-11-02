@@ -1,0 +1,40 @@
+plugins { id 'com.android.application' }
+
+// Интерфейс — общий с Windows-версией: папка ../www (без голосовой модели — на Android распознаёт система)
+def webSrc = rootProject.file('../www')
+def pkgFile = rootProject.file('../package.json')
+def pkg = new groovy.json.JsonSlurper().parse(pkgFile)
+def ver = pkg.version as String
+def vp = ver.tokenize('.').collect { it as int }
+def webOut = layout.buildDirectory.dir('webassets').get().asFile
+
+android {
+    namespace 'ru.edemplayer.tv'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'ru.edemplayer.tv'
+        minSdk 28          // Android 9
+        targetSdk 34
+        versionCode vp[0] * 10000 + vp[1] * 100 + vp[2]
+        versionName ver
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug   // для установки «с флешки»; свой ключ — позже
+        }
+    }
+    sourceSets { main { assets.srcDir webOut } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
+
+tasks.register('copyWeb', Copy) {
+    from(webSrc) { exclude 'models/**'; into 'www' }
+    from(pkgFile) { rename { 'app.json' } }
+    into webOut
+}
+preBuild.dependsOn 'copyWeb'
