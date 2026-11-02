@@ -50,7 +50,9 @@
         var j = V._json(r.text);
         if (j && j.type === 'error') { var e3 = new Error(TV.t('vod_server_says', { e: j.description || j.message || 'error' })); e3.apiErr = true; e3.ms = r.ms; throw e3; }
         if (r.status >= 400) { var e = new Error('HTTP ' + r.status + (snip ? ': ' + snip : '')); e.http = r.status; e.ms = r.ms; throw e; }
-        if (!j || typeof j !== 'object') { var e2 = new Error(TV.t('vod_notjson', { s: snip || '—' })); e2.notJson = true; e2.ms = r.ms; throw e2; }
+        if (!j || typeof j !== 'object') {
+          var e2 = new Error(TV.t('vod_notjson', { s: snip || '—' }) + V._oddChars(r.text)); e2.notJson = true; e2.ms = r.ms; throw e2;
+        }
         Object.defineProperty(j, '_ms', { value: r.ms, enumerable: false });
         return j;
       });
@@ -60,6 +62,9 @@
       t = String(t == null ? '' : t);
       try { return JSON.parse(t); } catch (e) { /* дальше — очистка */ }
       var c = t.replace(/^\uFEFF/, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim();
+      try { return JSON.parse(c); } catch (e) { /* */ }
+      // невидимые «пробелы», недопустимые в JSON (неразрывный, нулевой ширины и т. п.), и табуляции/переводы строк внутри строк
+      c = c.replace(/[\t\r\n\u00A0\u1680\u2000-\u200F\u2028\u2029\u202F\u205F\u2060\u3000\uFEFF]/g, ' ');
       try { return JSON.parse(c); } catch (e) { /* */ }
       var a = c.indexOf('{'), b = c.lastIndexOf('}');
       if (a >= 0 && b > a) { try { return JSON.parse(c.slice(a, b + 1)); } catch (e) { /* */ } }
@@ -73,6 +78,13 @@
         }
       }
       return null;
+    },
+    // какие необычные символы в ответе (для сообщения об ошибке): «U+00A0×3, U+0009×1»
+    _oddChars: function (t) {
+      var m = {}, n = 0;
+      String(t || '').replace(/[^\x20-\x7E\u0400-\u04FF]/g, function (ch) { var k = 'U+' + ('000' + ch.charCodeAt(0).toString(16).toUpperCase()).slice(-4); if (!m[k]) n++; m[k] = (m[k] || 0) + 1; return ch; });
+      var keys = Object.keys(m).sort(function (a, b) { return m[b] - m[a]; }).slice(0, 6);
+      return keys.length ? ' [' + keys.map(function (k) { return k + '×' + m[k]; }).join(', ') + '; ' + String(t || '').length + ' симв.]' : ' [' + String(t || '').length + ' симв.]';
     },
     // ключ не показываем нигде
     _clean: function (s, cfg) { return cfg && cfg.key ? String(s).split(cfg.key).join('***') : String(s); },

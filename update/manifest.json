@@ -1,8 +1,8 @@
 {
  "app": "EdemPlayer",
- "version": "2.2.0",
+ "version": "2.2.1",
  "shell": 1,
- "date": "2026-11-02T18:02:07.634Z",
+ "date": "2026-11-02T18:18:41.525Z",
  "files": {
   "www/css/app.css": "91109aac5d60812bb699e8e4b0072e8cc3ed256b9dfa7d5e3dafb792cead1c7a",
   "www/index.html": "e6b2000edf62735f08799940439d45dca3126fbbd42f2ccffc602a4eb307d70f",
@@ -20,7 +20,7 @@
   "www/js/search.js": "b7f809f6bf86b0b5a5e31ef67dcd02ebed78b262fb961cc5b5e6a18d3114bf2c",
   "www/js/source.js": "851cb3f8468a9950c1ee6d55e02b41654e835c26e56c09cdb3c2c08d95914255",
   "www/js/util.js": "aa402eeca630293f3cdf275c0a9757d94dc72ecb1ad9a97f4946378617e5d5e1",
-  "www/js/vod.js": "f71aee9eca95f8f8c1b677138b87c2b7e2ebf3041940ffd3a601c4b9dce3ce72",
+  "www/js/vod.js": "0f554c4e6ab1bbd0da55a8ca6bb884cc5a9dc8c244381a2a8711a71aec38b40d",
   "www/js/voice.js": "b6f54eab1986efafb19dffbdc38716e6a92153687e1ba9daf03a693174411fdf",
   "www/vendor/hls.min.js": "cfc70cc9e9fc63d071919e087670abc760c8fd1bc889b88588026e4d22193bbe",
   "www/vendor/pako_inflate.min.js": "efb8976b994144ffe643122f0b021e7999bb80736e17160f8b4417bf04b9b7fc",
