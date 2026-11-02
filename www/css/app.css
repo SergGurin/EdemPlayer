@@ -633,3 +633,7 @@ body.lite .osd-top, body.lite .osd-bottom { background: rgba(5,7,14,.78) !import
 body.lite .tile.vtile, body.lite .tile.chan { content-visibility: auto; }
 body.lite .tile.vtile { contain-intrinsic-height: auto 18em; }
 body.lite .tile.chan { contain-intrinsic-height: auto 4.6em; }
+
+/* полосы прокрутки не показываем нигде (интерфейс для пульта; колёсико и стрелки работают) */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
