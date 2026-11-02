@@ -25,7 +25,8 @@
       if (!urls.length || typeof Worker === 'undefined') return;
       self.loading = true;
       if (self.worker) try { self.worker.terminate(); } catch (e) { /* */ }
-      var w = self.worker = new Worker('js/epg-worker.js');
+      var w = self.worker = EPG._worker();
+      if (!w) { self.loading = false; self.errors = [TV.t('epg_noworker')]; self._emit(); return; }
       var now = TV.now();
       w.onmessage = function (ev) {
         var m = ev.data;
@@ -42,14 +43,29 @@
           self._emit();
         }
       };
-      w.onerror = function (e) { self.loading = false; console.warn('EPG worker', e.message); };
+      // сбой загрузчика — причина видна во вкладке «Программа передач»
+      w.onerror = function (e) { self.loading = false; self.errors = [TV.t('epg_worker_err', { e: (e && e.message) || '?' })]; self._emit(); };
       w.postMessage({
-        type: 'load', urls: urls,
+        type: 'load', urls: urls, proxy: EPG.proxy(),
         todayStart: TV.dayStart(now), now: now,
         from: TV.dayStart(now) - (TV_CONFIG.scheduleDays + 1) * 86400,
         to: now + 2 * 86400,
         channels: channels.map(function (c) { return { key: c.key, name: c.name, tvgId: c.tvgId, tvgName: c.tvgName }; })
       });
+    },
+
+    // Android: сеть загрузчика — через приложение (https://edp.local/proxy?u=…)
+    proxy: function () { return window.native && window.native.platform === 'android' ? 'https://edp.local/proxy?u=' : ''; },
+    // Фоновый загрузчик. На Android (страница из file://) — из Blob с уже встроенным pako: так WebView его точно разрешает
+    _worker: function () {
+      if (!(window.native && window.native.platform === 'android')) { try { return new Worker('js/epg-worker.js'); } catch (e) { return null; } }
+      try {
+        var get = function (u) { var x = new XMLHttpRequest(); x.open('GET', u, false); x.send(); return x.responseText; };
+        var code = get('vendor/pako_inflate.min.js') + '\n;' + get('js/epg-worker.js');
+        return new Worker(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })));
+      } catch (e) {
+        try { return new Worker('js/epg-worker.js'); } catch (e2) { return null; }
+      }
     },
 
     list: function (key) { return this.data[key] || []; },

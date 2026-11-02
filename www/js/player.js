@@ -105,8 +105,11 @@
           startPosition: this.mode === 'vod' ? (this._vodStart || 0) : (fromStart ? 0 : -1),
           liveSyncDurationCount: 3,
           liveMaxLatencyDurationCount: Infinity,
-          maxBufferLength: 40,
-          backBufferLength: 120,
+          // слабые устройства: качество не выше размера экрана, буфер меньше (память, декодер)
+          capLevelToPlayerSize: TV.lite(),
+          maxBufferLength: TV.lite() ? 20 : 40,
+          maxMaxBufferLength: TV.lite() ? 30 : 600,
+          backBufferLength: TV.lite() ? 15 : 120,
           manifestLoadingMaxRetry: 3,
           levelLoadingMaxRetry: 4,
           fragLoadingMaxRetry: 6,

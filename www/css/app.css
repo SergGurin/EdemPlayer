@@ -611,3 +611,25 @@ body.listmode .tile.cat.hasfan .name { display: block; white-space: nowrap; }
 .btn.eye { padding: .5em .8em; font-size: 1.05em; opacity: .75; flex: none; }
 .btn.eye.on { opacity: 1; background: linear-gradient(135deg, rgba(91,140,255,.45), rgba(155,107,255,.38)); }
 .sfield .synccode { margin: .3em 0; }
+
+/* ===== облегчённое оформление (Android, слабые устройства) ===== */
+body.lite, html:has(body.lite) { background: #070a12 !important; }
+body.lite *, body.lite *::before, body.lite *::after { animation: none !important; transition-duration: .06s !important; }
+body.lite .tile::after, body.lite .tile.vtile .poster::after { display: none !important; }
+body.lite #top, body.lite #dialog, body.lite #toast { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+body.lite #top { background: #0b0f1a !important; }
+body.lite .tile, body.lite .btn, body.lite .day, body.lite .pinfo, body.lite .dbox, body.lite .cbtn, body.lite #toast, body.lite .logo-mark { box-shadow: none !important; }
+body.lite .tile { background: #141a29 !important; }
+body.lite .tile.cat { background: linear-gradient(160deg, hsl(var(--h), 35%, 20%), #141a29 70%) !important; }
+body.lite .focused { box-shadow: 0 0 0 .16em #93b6ff !important; transform: scale(1.03) !important; background: #1d2740 !important; }
+body.lite .tile.cat.focused { background: linear-gradient(160deg, hsl(var(--h), 45%, 28%), #1b2337 70%) !important; }
+body.lite .btn.focused { transform: none !important; }
+body.lite .prog.focused, body.lite .day.focused, body.lite .chans.list .tile.chan.focused, body.lite.listmode .tile.focused { transform: none !important; }
+body.lite .tile.cat .ico, body.lite .sheroico, body.lite .rhead .rico, body.lite .star.on, body.lite #bar-head { filter: none !important; text-shadow: none !important; }
+body.lite .tile.cat .logos .lg, body.lite .tile.cat .fan img, body.lite .mini i, body.lite #bar-fill, body.lite .vprogf, body.lite .badge, body.lite .prog .badge, body.lite .vposter img { box-shadow: none !important; }
+body.lite .tile.vtile.focused .poster img, body.lite .tile.cat.focused .fan img, body.lite .tile.cat.focused .ico, body.lite .tile.chan.focused .logo { transform: none !important; }
+body.lite .osd-top, body.lite .osd-bottom { background: rgba(5,7,14,.78) !important; }
+/* карточки вне экрана не отрисовываются */
+body.lite .tile.vtile, body.lite .tile.chan { content-visibility: auto; }
+body.lite .tile.vtile { contain-intrinsic-height: auto 18em; }
+body.lite .tile.chan { contain-intrinsic-height: auto 4.6em; }

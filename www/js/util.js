@@ -74,6 +74,11 @@ window.TV = window.TV || {};
     var s = TV.mask(u);
     return s.replace(/([?&][^=&#]+=)[^&#]+/g, '$1***').replace(/\/([A-Za-z0-9_-]{12,})(?=\/|$|\?)/g, '/***');
   };
+  // Облегчённое оформление (слабые устройства): авто — включено на Android
+  TV.lite = function () {
+    var m = TV.store.get('liteMode', 'auto');
+    return m === 'on' || (m === 'auto' && !!(window.native && window.native.platform === 'android'));
+  };
   TV.toast = function (msg, ms) {
     msg = TV.mask(msg);
     var t = document.getElementById('toast');

@@ -40,8 +40,10 @@ function parseTime(s) {
 
 // Поток текста XMLTV: fetch → (gzip → распаковка) → UTF-8. Возвращает { read() → { done, value: строка } }.
 // Новые браузеры — DecompressionStream; старые (WebView Android 9) — встроенный pako и TextDecoder.
+// Android: запросы идут через «родную» часть приложения (без ограничений CORS у WebView)
+var PROXY = '';
 async function openStream(url) {
-  var res = await fetch(url, { cache: 'no-store' });
+  var res = await fetch(PROXY ? PROXY + encodeURIComponent(url) : url, { cache: 'no-store' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   var reader = res.body.getReader();
   var first = await reader.read();
@@ -59,7 +61,7 @@ async function openStream(url) {
     }).pipeThrough(new DecompressionStream('gzip'));
     reader = stream.getReader(); ended = false; gz = false;
   } else if (gz) {
-    if (!self.pako) importScripts('../vendor/pako_inflate.min.js');
+    if (!self.pako) importScripts((self.PAKO_URL || '../vendor/pako_inflate.min.js'));
     inf = new pako.Inflate();
     inf.onData = function (c) { out.push(td.decode(c, { stream: true })); };
   }
@@ -202,6 +204,7 @@ function cmp(a, b) { for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) retur
 onmessage = async function (ev) {
   var msg = ev.data;
   if (msg.type !== 'load') return;
+  PROXY = msg.proxy || '';
   var ctx = {
     byTvgId: {}, byName: {}, byExact: {}, data: {}, icons: {}, pick: {}, final: {},
     from: msg.from, to: msg.to, todayStart: msg.todayStart, now: msg.now || Date.now() / 1000, reportAt: 20e6

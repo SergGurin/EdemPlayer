@@ -655,6 +655,7 @@
       this.screen.className = 'screen-' + top.name;
       // вид «списком» — для всех экранов (каналы, категории, медиатека, поиск)
       document.body.classList.toggle('listmode', TV.store.get('chanView', 'tiles') === 'list');
+      document.body.classList.toggle('lite', TV.lite());
       var r = fn.call(this, top.params, top);
       if (isNew) r.node.classList.add('enter');
       this.screen.appendChild(r.node);
@@ -1241,6 +1242,13 @@
           button(vr, (cv === m[0] ? '◉ ' : '○ ') + m[1], 'chv:' + m[0], function () { TV.store.set('chanView', m[0]); rerender('chv:' + m[0]); }, cv === m[0] ? 'sel' : '');
         });
         wrap.appendChild(el('div', 'shint', TV.t('view_hint')));
+        section(TV.t('lite_title'));
+        var lm = TV.store.get('liteMode', 'auto');
+        var lr = btnRow('lite');
+        [['auto', TV.t('lite_auto')], ['on', TV.t('lite_on')], ['off', TV.t('lite_off')]].forEach(function (m) {
+          button(lr, (lm === m[0] ? '◉ ' : '○ ') + m[1], 'lite:' + m[0], function () { TV.store.set('liteMode', m[0]); rerender('lite:' + m[0]); }, lm === m[0] ? 'sel' : '');
+        });
+        wrap.appendChild(el('div', 'shint', TV.t('lite_hint')));
         section(TV.t('err_marks'));
         var em = el('div', 'shint');
         em.appendChild(el('span', 'errlive', TV.t('err_mark_live'))); em.appendChild(document.createTextNode(' · '));

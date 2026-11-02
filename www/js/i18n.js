@@ -569,6 +569,8 @@
 
   // ---- 1.7: Яндекс.Диск, отдельная вкладка медиатеки, история просмотра ----
   Object.assign(DICT.ru, {
+    lite_title: 'Облегчённое оформление', lite_auto: 'Авто', lite_on: 'Включено', lite_off: 'Выключено', lite_hint: 'Для слабых устройств (ТВ-приставки, проекторы): без размытия, теней, свечения и анимаций, видео — в качестве не выше размера экрана. «Авто» — включено на Android.', 
+    epg_noworker: 'загрузчик программы передач не запустился на этом устройстве', epg_worker_err: 'сбой загрузчика программы передач: {e}', 
     clip_copy: 'Копировать', clip_paste: 'Вставить из буфера', clip_copied: 'Скопировано в буфер обмена', clip_pasted: 'Вставлено из буфера обмена', clip_empty: 'Буфер обмена пуст', clip_fail: 'Нет доступа к буферу обмена', file_exported_to: 'Настройки сохранены: {name}', 
     show_hide: 'Показать / скрыть', 
     tab_sys: 'Система', 
@@ -602,6 +604,8 @@
     ya_bad_token: 'Яндекс.Диск не принял токен — получите новый', ya_err: 'Яндекс.Диск: {e}', ya_open_hint: 'Откройте в браузере: {url}'
   });
   Object.assign(DICT.en, {
+    lite_title: 'Lightweight look', lite_auto: 'Auto', lite_on: 'On', lite_off: 'Off', lite_hint: 'For weak devices (TV boxes, projectors): no blur, shadows, glow or animations; video quality capped at screen size. “Auto” — on for Android.', 
+    epg_noworker: 'the TV guide loader could not start on this device', epg_worker_err: 'TV guide loader failed: {e}', 
     clip_copy: 'Copy', clip_paste: 'Paste from clipboard', clip_copied: 'Copied to clipboard', clip_pasted: 'Pasted from clipboard', clip_empty: 'Clipboard is empty', clip_fail: 'No clipboard access', file_exported_to: 'Settings saved: {name}', 
     show_hide: 'Show / hide', 
     tab_sys: 'System', 

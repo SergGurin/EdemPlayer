@@ -119,6 +119,36 @@ public class Bridge {
         catch (Exception e) { return fail("ERR", e.getClass().getSimpleName() + ": " + e.getMessage(), t0); }
     }
 
+    /** Прокси для фонового загрузчика: GET с переходами, ответ потоком и с разрешающими CORS-заголовками. */
+    static android.webkit.WebResourceResponse proxy(String url) {
+        java.util.Map<String, String> h = new java.util.HashMap<>();
+        h.put("Access-Control-Allow-Origin", "*");
+        h.put("Cache-Control", "no-store");
+        try {
+            for (int hop = 0; hop < 6; hop++) {
+                HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+                c.setInstanceFollowRedirects(false);
+                c.setConnectTimeout(20000); c.setReadTimeout(60000);
+                c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) EdemPlayer");
+                c.setRequestProperty("Accept-Encoding", "identity"); // gzip-файлы распаковывает сам загрузчик
+                int st = c.getResponseCode();
+                if (st >= 300 && st < 400 && c.getHeaderField("Location") != null) {
+                    url = new URL(new URL(url), c.getHeaderField("Location")).toString(); c.disconnect(); continue;
+                }
+                InputStream is = st >= 400 ? c.getErrorStream() : c.getInputStream();
+                if (is == null) is = new java.io.ByteArrayInputStream(new byte[0]);
+                String ct = c.getContentType();
+                String mime = ct == null ? "application/octet-stream" : ct.split(";")[0].trim();
+                String reason = c.getResponseMessage();
+                return new android.webkit.WebResourceResponse(mime, null, st, reason == null || reason.isEmpty() ? "OK" : reason, h, is);
+            }
+            return new android.webkit.WebResourceResponse("text/plain", "utf-8", 508, "Loop", h, new java.io.ByteArrayInputStream("too many redirects".getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            String m = e.getClass().getSimpleName() + ": " + e.getMessage();
+            return new android.webkit.WebResourceResponse("text/plain", "utf-8", 502, "Bad Gateway", h, new java.io.ByteArrayInputStream(m.getBytes(StandardCharsets.UTF_8)));
+        }
+    }
+
     static String fail(String code, String msg, long t0) {
         try { return new JSONObject().put("error", code).put("message", msg == null ? "" : msg).put("ms", System.currentTimeMillis() - t0).toString(); }
         catch (Exception e) { return "{\"error\":\"ERR\"}"; }

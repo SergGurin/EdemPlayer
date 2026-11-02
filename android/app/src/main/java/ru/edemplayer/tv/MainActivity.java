@@ -15,6 +15,7 @@ import android.webkit.ConsoleMessage;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -76,6 +77,13 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(bridge, "AndroidNative");
 
         web.setWebViewClient(new WebViewClient() {
+            // запросы фонового загрузчика (программа передач): https://edp.local/proxy?u=<адрес> → сеть приложения, без CORS
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
+                Uri u = req.getUrl();
+                if ("edp.local".equals(u.getHost()) && "/proxy".equals(u.getPath())) return Bridge.proxy(u.getQueryParameter("u"));
+                return null;
+            }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 Uri u = req.getUrl();
@@ -136,13 +144,24 @@ public class MainActivity extends Activity {
         int k = e.getKeyCode();
         if (k == KeyEvent.KEYCODE_BACK || k == KeyEvent.KEYCODE_ESCAPE) {
             if (e.getAction() == KeyEvent.ACTION_UP && e.getRepeatCount() == 0) {
-                web.evaluateJavascript("window.__nativeBack?window.__nativeBack():false", new ValueCallback<String>() {
-                    @Override public void onReceiveValue(String v) { if (!"true".equals(v)) finish(); }
+                web.evaluateJavascript("(function(){try{return window.__nativeBack?window.__nativeBack():false}catch(e){return true}})()", new ValueCallback<String>() {
+                    // интерфейс не ответил — спросить здесь, не закрывать молча
+                    @Override public void onReceiveValue(String v) { if (!"true".equals(v)) askExit(); }
                 });
             }
             return true;
         }
         return super.dispatchKeyEvent(e);
+    }
+
+    void askExit() {
+        new android.app.AlertDialog.Builder(this)
+                .setMessage("Выйти из EdemPlayer?")
+                .setPositiveButton("Выйти", new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface d, int w) { finish(); }
+                })
+                .setNegativeButton("Остаться", null)
+                .show();
     }
 
     @Override
