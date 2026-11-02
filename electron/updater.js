@@ -18,7 +18,8 @@ const crypto = require('crypto');
 const SHELL = 1; // версия оболочки (main.js/preload.js); растёт, когда интерфейсу нужны новые возможности оболочки
 
 const pkg = (() => { try { return require(path.join(__dirname, '..', 'package.json')); } catch (e) { return {}; } })();
-const CFG = Object.assign({ repo: '', branch: 'main' }, pkg.edemUpdate || {});
+const CFG = Object.assign({ branch: 'main' }, pkg.edemUpdate || {});
+if (!CFG.repo) CFG.repo = 'SergGurin/EdemPlayer'; // источник по умолчанию
 
 const BUNDLED = path.join(__dirname, '..');                 // установленная копия: <..>/www
 const UDIR = () => path.join(app.getPath('userData'), 'app');
