@@ -246,6 +246,23 @@ public class Bridge {
         } finally { try { s.close(); } catch (Exception e) { /* */ } }
     }
 
+    // адрес видео для плеера: если DNS провайдера не находит сервер — через локальный прокси с защищённым DNS
+    @JavascriptInterface
+    public void mediaUrl(final String id, final String url) {
+        pool.execute(new Runnable() { @Override public void run() {
+            try {
+                String h = new URL(url).getHost();
+                if ("auto".equals(Doh.mode) && !Doh.isIp(h) && !Doh.use(h)) {
+                    try { InetAddress.getByName(h); }
+                    catch (UnknownHostException e) { try { Doh.resolve(h); Doh.mark(h); } catch (Exception e2) { /* DoH тоже не знает */ } }
+                }
+                a.reply(id, new JSONObject().put("url", LocalProxy.wrap(url)).toString());
+            } catch (Exception e) {
+                try { a.reply(id, new JSONObject().put("url", url).toString()); } catch (Exception e2) { a.reply(id, err("url")); }
+            }
+        } });
+    }
+
     // режим защищённого DNS: auto | on | off
     @JavascriptInterface
     public void setDns(String m) { Doh.mode = "on".equals(m) || "off".equals(m) ? m : "auto"; }

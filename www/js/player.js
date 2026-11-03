@@ -69,8 +69,15 @@
       this.errors = 0;
       this.mode = 'vod';
       this.originUtc = 0;
-      if (/\.(mp4|m4v|webm|mov|mkv)(\?|$)/i.test(url)) this._attachNative(url);
-      else this._attach(url, true);
+      var self = this, tok = this._vodTok = (this._vodTok || 0) + 1;
+      var go = function (u) {
+        if (self._vodTok !== tok || self.ch !== ch) return; // пока ждали — открыли другое
+        if (/\.(mp4|m4v|webm|mov|mkv)(\?|$)/i.test(url)) self._attachNative(u);
+        else self._attach(u, true);
+      };
+      // Android: домен заблокирован на DNS провайдера — видео через локальный прокси с защищённым DNS
+      if (window.native && window.native.mediaUrl) window.native.mediaUrl(url).then(go, function () { go(url); });
+      else go(url);
     },
     _attachNative: function (url) {
       var self = this, v = this.video;
@@ -115,6 +122,26 @@
           fragLoadingMaxRetry: 6,
           enableWorker: true
         });
+        // кодеки, объявленные в плейлисте: если устройство не поддерживает ни один вариант, hls.js падает
+        // ещё до загрузки видео — тогда по этому списку называем, чего именно не хватает
+        hls.on(Hls.Events.MANIFEST_LOADED, function (e, d) {
+          var seen = {};
+          function chk(kind, c) {
+            String(c || '').split(',').forEach(function (x) {
+              x = x.trim(); if (!x || seen[x]) return; seen[x] = 1;
+              var ok = true;
+              try { ok = MediaSource.isTypeSupported(kind + '/mp4; codecs="' + x + '"'); } catch (er) { /* */ }
+              if (!ok) self.diag.declared.push(P.codecName(x));
+            });
+          }
+          self.diag.declared = [];
+          (d.levels || []).forEach(function (l) {
+            var a = l.attrs || {};
+            if (l.videoCodec || l.audioCodec) { chk('video', l.videoCodec); chk('audio', l.audioCodec); }
+            else String(a.CODECS || '').split(',').forEach(function (x) { chk(/^(mp4a|ac-3|ec-3|ac3|eac3|opus|flac|mp3)/i.test(x.trim()) ? 'audio' : 'video', x); });
+          });
+          (d.audioTracks || []).forEach(function (t) { if (t.audioCodec || (t.attrs || {}).CODECS) chk('audio', t.audioCodec || t.attrs.CODECS); });
+        });
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
           if (!self.userPaused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
         });
@@ -149,7 +176,8 @@
           // несовместимый кодек — повторять бессмысленно
           if (/IncompatibleCodecs|bufferAddCodecError|bufferIncompatibleCodecsError/.test(d.details) ||
               (self.diag.unsupported.length && /buffer/i.test(d.details))) {
-            if (self.onCodec) self.onCodec(self.diag.unsupported.length ? self.diag.unsupported : [TV.t('unknown_codec')]);
+            var bad = self.diag.unsupported.length ? self.diag.unsupported : (self.diag.declared || []);
+            if (self.onCodec) self.onCodec(bad.length ? bad : [TV.t('unknown_codec')]);
             return;
           }
           self.errors++;

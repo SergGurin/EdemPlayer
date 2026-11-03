@@ -1,8 +1,8 @@
 {
  "app": "EdemPlayer",
- "version": "2.2.7",
+ "version": "2.2.8",
  "shell": 1,
- "date": "2026-11-02T19:37:12.565Z",
+ "date": "2026-11-03T05:34:24.110Z",
  "files": {
   "www/css/app.css": "2e9a543dd87a3b6cc2c96ae1b180dbb5d510576f88c42a7a29f99b384e7f6722",
   "www/index.html": "e6b2000edf62735f08799940439d45dca3126fbbd42f2ccffc602a4eb307d70f",
@@ -14,9 +14,9 @@
   "www/js/epg.js": "e2e3ab8a2408bbe10ff5e32c8a189fcfb2b2bcdb612c4dd6a27ec69696fbb809",
   "www/js/i18n.js": "b4cc55028b2ab12e1f7e272c56a38fd02462a02e6d2ffcbe23e153720c40ff90",
   "www/js/m3u.js": "bb5b1db2f610685204e1f1119937b0371475e4f5904ed222240c064de2ff1061",
-  "www/js/native-android.js": "2a4c9ab4a0b621b2a228241043db9fdb0836e2da2320eb0b5d9449f3cd44a6fb",
+  "www/js/native-android.js": "9a8dd2927fa9359e959c3c4fe8ec5760d8eba1e2091f5c947e97020887d8df4f",
   "www/js/nav.js": "61ced9eb606597401de2d96e547abe4d1437eda1a3b3625972a0333b274b8f04",
-  "www/js/player.js": "24bd7a62b37f7142f280c3e40df332ce292bb7a6559ba94070545983a8033f3c",
+  "www/js/player.js": "8ac93045550c4ba1e144b7cfb1f049db75784c6c0a2f0ff18e4f5fb2801e241a",
   "www/js/search.js": "b7f809f6bf86b0b5a5e31ef67dcd02ebed78b262fb961cc5b5e6a18d3114bf2c",
   "www/js/source.js": "851cb3f8468a9950c1ee6d55e02b41654e835c26e56c09cdb3c2c08d95914255",
   "www/js/util.js": "17219cf4d68566bf125b99caae6d268d528adee07d95f1f9baa3c81495d43628",
